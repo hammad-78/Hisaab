@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/format.dart';
+import '../../core/theme.dart';
 import '../../models/report.dart';
 import '../../models/shop.dart';
 import '../../providers/cafe_provider.dart';
@@ -127,7 +128,7 @@ class _ReportsTabState extends ConsumerState<ReportsTab> {
         DropdownButtonFormField<String?>(
           initialValue: _shopId,
           decoration: const InputDecoration(
-              labelText: 'Shop', border: OutlineInputBorder(), isDense: true),
+              labelText: 'Shop', isDense: true),
           items: [
             const DropdownMenuItem(value: null, child: Text('All shops')),
             for (final s in shops)
@@ -185,44 +186,52 @@ class _ReportView extends StatelessWidget {
     final r = report;
     final theme = Theme.of(context);
 
-    Widget stat(String label, String value) => Expanded(
-          child: Card(
-            margin: const EdgeInsets.symmetric(horizontal: 4),
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(label, style: theme.textTheme.bodySmall),
-                  const SizedBox(height: 4),
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerLeft,
-                    child: Text(value, style: theme.textTheme.titleLarge),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
+    final num_ = theme.textTheme.bodyLarge?.copyWith(fontFeatures: tabular);
+    final head = theme.textTheme.labelMedium?.copyWith(color: HColors.pencil);
 
+    // A ruled ledger table: name on the left, figures right-aligned in columns.
     Widget section(String title, String countLabel, List<ReportLine> lines) =>
         Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const SizedBox(height: 20),
+            const SizedBox(height: 28),
             Text(title, style: theme.textTheme.titleMedium),
-            const SizedBox(height: 4),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Row(children: [
+                const Spacer(),
+                SizedBox(width: 64, child: Text(countLabel, textAlign: TextAlign.right, style: head)),
+                SizedBox(width: 110, child: Text('Amount', textAlign: TextAlign.right, style: head)),
+              ]),
+            ),
+            const Divider(color: HColors.graphite),
             for (final l in lines)
-              ListTile(
-                dense: true,
-                contentPadding: EdgeInsets.zero,
-                title: Text(l.name),
-                subtitle: Text(
-                    [if (l.sub != null) l.sub!, '$countLabel ${l.count}']
-                        .join(' · ')),
-                trailing: Text(formatPrice(l.amount),
-                    style: theme.textTheme.titleSmall),
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: const BoxDecoration(
+                    border: Border(bottom: BorderSide(color: HColors.rule))),
+                child: Row(children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(l.name, style: theme.textTheme.bodyLarge),
+                        if (l.sub != null)
+                          Text(l.sub!,
+                              style: theme.textTheme.bodySmall
+                                  ?.copyWith(color: HColors.pencil)),
+                      ],
+                    ),
+                  ),
+                  SizedBox(
+                      width: 64,
+                      child: Text('${l.count}', textAlign: TextAlign.right, style: num_)),
+                  SizedBox(
+                      width: 110,
+                      child: Text(formatMoney(l.amount),
+                          textAlign: TextAlign.right, style: num_)),
+                ]),
               ),
           ],
         );
@@ -230,19 +239,44 @@ class _ReportView extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(children: [
-          stat('Total sales', formatPrice(r.total)),
-          stat('Orders', '${r.orders}'),
-          stat('Items sold', '${r.itemsSold}'),
-        ]),
-        const SizedBox(height: 12),
+        // The total, ruled off like the bottom of a ledger page.
+        Text('Total sales', style: theme.textTheme.bodyLarge?.copyWith(color: HColors.pencil)),
+        const SizedBox(height: 2),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Container(
+            padding: const EdgeInsets.only(bottom: 3),
+            decoration: const BoxDecoration(
+                border: Border(bottom: BorderSide(color: HColors.ink, width: 1.5))),
+            child: Container(
+              padding: const EdgeInsets.only(bottom: 2),
+              decoration: const BoxDecoration(
+                  border: Border(bottom: BorderSide(color: HColors.ink, width: 1.5))),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(formatMoney(r.total),
+                    style: theme.textTheme.displaySmall?.copyWith(
+                        color: HColors.ink,
+                        fontWeight: FontWeight.w800,
+                        fontFeatures: tabular)),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        Text(
+          '${r.orders} ${r.orders == 1 ? 'order' : 'orders'}, '
+          '${r.itemsSold} ${r.itemsSold == 1 ? 'item' : 'items'} sold',
+          style: theme.textTheme.bodyLarge,
+        ),
+        const SizedBox(height: 16),
         Row(
           children: [
             Expanded(
               child: OutlinedButton.icon(
                 onPressed: exporting || r.isEmpty ? null : () => onExport(true),
                 icon: const Icon(Icons.picture_as_pdf),
-                label: const Text('PDF'),
+                label: const Text('Share PDF'),
               ),
             ),
             const SizedBox(width: 8),
@@ -251,7 +285,7 @@ class _ReportView extends StatelessWidget {
                 onPressed:
                     exporting || r.isEmpty ? null : () => onExport(false),
                 icon: const Icon(Icons.grid_on),
-                label: const Text('Excel'),
+                label: const Text('Share Excel'),
               ),
             ),
           ],
@@ -259,7 +293,10 @@ class _ReportView extends StatelessWidget {
         if (r.isEmpty)
           const Padding(
             padding: EdgeInsets.all(32),
-            child: Center(child: Text('No sales in this period.')),
+            child: Center(
+                child: Text(
+                    'No sales in this period. Pick another date range or shop.',
+                    textAlign: TextAlign.center)),
           )
         else ...[
           if (showShops) section('By shop', 'Orders', r.byShop),

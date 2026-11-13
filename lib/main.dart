@@ -2,6 +2,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'core/theme.dart';
 import 'features/auth/login_screen.dart';
 import 'features/manager/manager_home.dart';
 import 'features/owner/owner_home.dart';
@@ -23,10 +24,7 @@ class HisaabApp extends StatelessWidget {
     return MaterialApp(
       title: 'Hisaab',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.brown),
-        useMaterial3: true,
-      ),
+      theme: buildTheme(),
       home: const AuthGate(),
     );
   }

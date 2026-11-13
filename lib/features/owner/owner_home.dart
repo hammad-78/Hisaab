@@ -9,6 +9,7 @@ import 'add_shop_screen.dart';
 import 'create_cafe_view.dart';
 import 'menu_tab.dart';
 import 'reports_tab.dart';
+import 'shops_tab.dart';
 import 'waiters_tab.dart';
 
 class OwnerHome extends ConsumerStatefulWidget {
@@ -44,7 +45,7 @@ class _OwnerHomeState extends ConsumerState<OwnerHome> {
       body: cafeId == null
           ? CreateCafeView(user: widget.user)
           : switch (_tab) {
-              0 => _ShopsList(cafeId: cafeId),
+              0 => ShopsTab(user: widget.user, cafeId: cafeId),
               1 => MenuTab(cafeId: cafeId),
               2 => WaitersTab(cafeId: cafeId),
               _ => ReportsTab(cafeId: cafeId),
@@ -103,39 +104,5 @@ class _OwnerHomeState extends ConsumerState<OwnerHome> {
       default:
         return null;
     }
-  }
-}
-
-class _ShopsList extends ConsumerWidget {
-  const _ShopsList({required this.cafeId});
-  final String cafeId;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final shops = ref.watch(shopsProvider(cafeId));
-    return shops.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Could not load shops: $e')),
-      data: (list) {
-        if (list.isEmpty) {
-          return const Center(
-              child: Text('No shops yet.\nTap "Add shop" to create one.',
-                  textAlign: TextAlign.center));
-        }
-        return ListView.separated(
-          padding: const EdgeInsets.only(bottom: 88),
-          itemCount: list.length,
-          separatorBuilder: (_, _) => const Divider(height: 1),
-          itemBuilder: (_, i) {
-            final s = list[i];
-            return ListTile(
-              leading: const Icon(Icons.storefront),
-              title: Text(s.name),
-              subtitle: Text('${s.managerName} · ${s.managerEmail}'),
-            );
-          },
-        );
-      },
-    );
   }
 }

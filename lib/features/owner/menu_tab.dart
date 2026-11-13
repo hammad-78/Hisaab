@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/format.dart';
+import '../../core/theme.dart';
 import '../../models/item.dart';
 import '../../providers/cafe_provider.dart';
 
@@ -105,7 +106,8 @@ class MenuTab extends ConsumerWidget {
             return ListTile(
               leading: const Icon(Icons.coffee),
               title: Text(it.name),
-              subtitle: Text(formatPrice(it.price)),
+              subtitle: Text(formatMoney(it.price),
+                  style: const TextStyle(fontFeatures: tabular)),
               onTap: () => showItemDialog(context, ref, cafeId, existing: it),
               trailing: IconButton(
                 icon: const Icon(Icons.delete_outline),

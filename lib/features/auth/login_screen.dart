@@ -2,7 +2,42 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/theme.dart';
 import '../../providers/auth_provider.dart';
+
+/// "Hisaab" ruled off like a ledger total, with the Urdu word beneath.
+class _Wordmark extends StatelessWidget {
+  const _Wordmark();
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context).textTheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.only(bottom: 4),
+          decoration: const BoxDecoration(
+              border: Border(bottom: BorderSide(color: HColors.ink, width: 2))),
+          child: Container(
+            padding: const EdgeInsets.only(bottom: 2),
+            decoration: const BoxDecoration(
+                border: Border(bottom: BorderSide(color: HColors.ink, width: 2))),
+            child: Text('Hisaab',
+                style: t.displaySmall?.copyWith(
+                    color: HColors.ink,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -1)),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text('حساب',
+            textDirection: TextDirection.rtl,
+            style: t.titleLarge?.copyWith(color: HColors.pencil)),
+      ],
+    );
+  }
+}
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -89,19 +124,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Icon(Icons.local_cafe,
-                        size: 64, color: Theme.of(context).colorScheme.primary),
-                    const SizedBox(height: 8),
-                    Text('Hisaab',
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.headlineMedium),
-                    const SizedBox(height: 32),
+                    const _Wordmark(),
+                    const SizedBox(height: 28),
+                    Text(
+                        _registerMode
+                            ? 'Create an owner account. You can add your cafe, shops and managers next.'
+                            : 'Log in with the email and password you were given.',
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodyLarge
+                            ?.copyWith(color: HColors.pencil)),
+                    const SizedBox(height: 20),
                     if (_registerMode) ...[
                       TextFormField(
                         controller: _name,
                         decoration: const InputDecoration(
-                            labelText: 'Your name',
-                            border: OutlineInputBorder()),
+                            labelText: 'Your name'),
                         validator: (v) => (v == null || v.trim().isEmpty)
                             ? 'Enter your name'
                             : null,
@@ -112,7 +150,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       controller: _email,
                       keyboardType: TextInputType.emailAddress,
                       decoration: const InputDecoration(
-                          labelText: 'Email', border: OutlineInputBorder()),
+                          labelText: 'Email'),
                       validator: (v) => (v == null || !v.contains('@'))
                           ? 'Enter a valid email'
                           : null,
@@ -122,7 +160,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       controller: _password,
                       obscureText: true,
                       decoration: const InputDecoration(
-                          labelText: 'Password', border: OutlineInputBorder()),
+                          labelText: 'Password'),
                       validator: (v) => (v == null || v.length < 6)
                           ? 'At least 6 characters'
                           : null,

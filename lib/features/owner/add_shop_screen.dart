@@ -60,7 +60,7 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
   }
 
   InputDecoration _dec(String label) =>
-      InputDecoration(labelText: label, border: const OutlineInputBorder());
+      InputDecoration(labelText: label);
 
   @override
   Widget build(BuildContext context) {

@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/format.dart';
+import '../../core/theme.dart';
 import '../../models/app_user.dart';
 import '../../models/item.dart';
-import '../../models/sale.dart';
 import '../../models/waiter.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/cafe_provider.dart';
 import '../../providers/sales_provider.dart';
-import '../../services/sales_service.dart';
+import 'today_orders_screen.dart';
+import 'widgets/order_slip.dart';
 
 class ManagerHome extends ConsumerWidget {
   const ManagerHome({super.key, required this.user});
@@ -20,85 +22,88 @@ class ManagerHome extends ConsumerWidget {
     final cafeId = user.cafeId;
     final shopId = user.shopId;
 
-    Widget body;
-    String title = 'Hisaab';
-
     if (cafeId == null || shopId == null) {
-      body = const Center(child: Text('This account is not linked to a shop.'));
-    } else {
-      final shops = ref.watch(shopsProvider(cafeId)).valueOrNull ?? const [];
-      for (final s in shops) {
-        if (s.id == shopId) title = s.name;
-      }
-      body = SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _OrderForm(user: user, cafeId: cafeId, shopId: shopId),
-            const Divider(height: 1),
-            _TodayOrders(cafeId: cafeId, shopId: shopId),
-          ],
+      return Scaffold(
+        appBar: AppBar(title: const Text('Hisaab'), actions: [_logout(ref)]),
+        body: const Center(
+          child: Padding(
+            padding: EdgeInsets.all(24),
+            child: Text(
+                'This login is not linked to a shop. Ask the cafe owner to add you as a shop manager.',
+                textAlign: TextAlign.center),
+          ),
         ),
       );
     }
 
+    final shops = ref.watch(shopsProvider(cafeId)).valueOrNull ?? const [];
+    final shopName =
+        shops.where((s) => s.id == shopId).map((s) => s.name).firstOrNull ?? '';
+    final today =
+        ref.watch(todaySalesProvider((cafeId: cafeId, shopId: shopId)));
+    final todayOrders =
+        today.valueOrNull?.map((s) => s.orderId).toSet().length;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(title),
+        title: Text(shopName),
         actions: [
-          IconButton(
-            tooltip: 'Log out',
-            icon: const Icon(Icons.logout),
-            onPressed: () => ref.read(authServiceProvider).signOut(),
+          TextButton.icon(
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) =>
+                    TodayOrdersScreen(cafeId: cafeId, shopId: shopId))),
+            icon: const Icon(Icons.receipt_long),
+            label: Text(todayOrders == null ? 'Today' : 'Today ($todayOrders)'),
           ),
+          _logout(ref),
         ],
       ),
-      body: body,
+      body: _Counter(user: user, cafeId: cafeId, shopId: shopId),
     );
   }
+
+  Widget _logout(WidgetRef ref) => IconButton(
+        tooltip: 'Log out',
+        icon: const Icon(Icons.logout),
+        onPressed: () => ref.read(authServiceProvider).signOut(),
+      );
 }
 
-class _OrderForm extends ConsumerStatefulWidget {
-  const _OrderForm(
+/// The counter: pick a waiter, tap menu items to build the slip, place it.
+class _Counter extends ConsumerStatefulWidget {
+  const _Counter(
       {required this.user, required this.cafeId, required this.shopId});
   final AppUser user;
   final String cafeId;
   final String shopId;
 
   @override
-  ConsumerState<_OrderForm> createState() => _OrderFormState();
+  ConsumerState<_Counter> createState() => _CounterState();
 }
 
-class _OrderFormState extends ConsumerState<_OrderForm> {
-  Waiter? _waiter;
-  Item? _item;
-  int _qty = 1;
-  int _itemFieldKey = 0; // bumping this clears the item dropdown
-  final List<OrderLine> _cart = [];
+class _CounterState extends ConsumerState<_Counter> {
+  String? _waiterId;
+  final Map<String, int> _qty = {}; // itemId -> qty, in the order tapped
+  String _search = '';
   bool _busy = false;
 
-  num get _cartTotal =>
-      _cart.fold<num>(0, (s, l) => s + l.item.price * l.qty);
+  void _add(Item item) {
+    HapticFeedback.selectionClick();
+    setState(() => _qty[item.id] = (_qty[item.id] ?? 0) + 1);
+  }
 
-  void _addToCart() {
-    final item = _item;
-    if (item == null) return;
+  void _change(String itemId, int delta) {
     setState(() {
-      final i = _cart.indexWhere((l) => l.item.id == item.id);
-      if (i >= 0) {
-        _cart[i] = (item: item, qty: _cart[i].qty + _qty);
+      final q = (_qty[itemId] ?? 0) + delta;
+      if (q <= 0) {
+        _qty.remove(itemId);
       } else {
-        _cart.add((item: item, qty: _qty));
+        _qty[itemId] = q;
       }
-      _item = null;
-      _qty = 1;
-      _itemFieldKey++;
     });
   }
 
-  Future<void> _place() async {
-    final waiter = _waiter;
-    if (waiter == null || _cart.isEmpty) return;
+  Future<void> _place(Waiter waiter, List<SlipLine> lines, num total) async {
     setState(() => _busy = true);
     try {
       await ref.read(salesServiceProvider).addOrder(
@@ -106,15 +111,16 @@ class _OrderFormState extends ConsumerState<_OrderForm> {
             shopId: widget.shopId,
             managerUid: widget.user.uid,
             waiter: waiter,
-            lines: List.of(_cart),
+            lines: [for (final l in lines) (item: l.item, qty: l.qty)],
           );
       if (!mounted) return;
-      // Keep the waiter selected for the next order.
-      setState(() => _cart.clear());
+      setState(() => _qty.clear());
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Order placed for ${waiter.name}: ${formatMoney(total)}')));
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not save order: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Order not saved. Check your connection and try again. ($e)')));
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -123,218 +129,199 @@ class _OrderFormState extends ConsumerState<_OrderForm> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final waiters = (ref.watch(waitersProvider(widget.cafeId)).valueOrNull ??
             const <Waiter>[])
         .where((w) => w.shopId == widget.shopId)
         .toList();
-    final items =
-        ref.watch(itemsProvider(widget.cafeId)).valueOrNull ?? const <Item>[];
-    final theme = Theme.of(context);
+    final itemsAsync = ref.watch(itemsProvider(widget.cafeId));
+    final items = itemsAsync.valueOrNull ?? const <Item>[];
+    final byId = {for (final i in items) i.id: i};
 
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          DropdownButtonFormField<Waiter>(
-            initialValue: waiters.where((w) => w.id == _waiter?.id).firstOrNull,
-            decoration: const InputDecoration(
-                labelText: 'Waiter', border: OutlineInputBorder()),
-            hint: Text(waiters.isEmpty ? 'No waiters for this shop' : 'Select'),
-            items: [
-              for (final w in waiters)
-                DropdownMenuItem(value: w, child: Text(w.name)),
-            ],
-            onChanged: (w) => setState(() => _waiter = w),
-          ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<Item>(
-            key: ValueKey(_itemFieldKey),
-            initialValue: _item,
-            decoration: const InputDecoration(
-                labelText: 'Item', border: OutlineInputBorder()),
-            hint: Text(items.isEmpty ? 'No items in menu' : 'Select'),
-            items: [
-              for (final i in items)
-                DropdownMenuItem(
-                    value: i,
-                    child: Text('${i.name} · ${formatPrice(i.price)}')),
-            ],
-            onChanged: (i) => setState(() => _item = i),
-          ),
-          const SizedBox(height: 12),
-          Row(
+    // Drop slip lines whose item was removed from the menu meanwhile.
+    final lines = [
+      for (final e in _qty.entries)
+        if (byId[e.key] != null) SlipLine(byId[e.key]!, e.value),
+    ];
+    final waiter = waiters.where((w) => w.id == _waiterId).firstOrNull;
+
+    final q = _search.trim().toLowerCase();
+    final shown =
+        q.isEmpty ? items : items.where((i) => i.name.toLowerCase().contains(q)).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // ---- waiter ----
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
+          child: Text('Waiter', style: theme.textTheme.titleSmall),
+        ),
+        SizedBox(
+          height: 48,
+          child: waiters.isEmpty
+              ? Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Text('No waiters in this shop yet. Ask the owner to add one.',
+                      style: theme.textTheme.bodyMedium
+                          ?.copyWith(color: HColors.pencil)),
+                )
+              : ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: waiters.length,
+                  separatorBuilder: (_, _) => const SizedBox(width: 8),
+                  itemBuilder: (_, i) {
+                    final w = waiters[i];
+                    final selected = w.id == _waiterId;
+                    return ChoiceChip(
+                      label: Text(w.name),
+                      selected: selected,
+                      showCheckmark: false,
+                      labelStyle: theme.textTheme.labelLarge?.copyWith(
+                          color: selected ? Colors.white : HColors.graphite),
+                      onSelected: (_) => setState(() => _waiterId = w.id),
+                    );
+                  },
+                ),
+        ),
+
+        // ---- menu ----
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
+          child: Row(
             children: [
-              IconButton.outlined(
-                onPressed: _qty > 1 ? () => setState(() => _qty--) : null,
-                icon: const Icon(Icons.remove),
-              ),
-              SizedBox(
-                width: 48,
-                child: Text('$_qty',
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.titleLarge),
-              ),
-              IconButton.outlined(
-                onPressed: () => setState(() => _qty++),
-                icon: const Icon(Icons.add),
-              ),
-              const Spacer(),
-              FilledButton.tonalIcon(
-                onPressed: _item == null ? null : _addToCart,
-                icon: const Icon(Icons.add_shopping_cart),
-                label: const Text('Add to order'),
-              ),
-            ],
-          ),
-          if (_cart.isNotEmpty) ...[
-            const SizedBox(height: 16),
-            Card(
-              margin: EdgeInsets.zero,
-              child: Column(
-                children: [
-                  for (var i = 0; i < _cart.length; i++)
-                    ListTile(
-                      dense: true,
-                      title: Text('${_cart[i].qty} × ${_cart[i].item.name}'),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(formatPrice(_cart[i].item.price * _cart[i].qty)),
-                          IconButton(
-                            tooltip: 'Remove',
-                            icon: const Icon(Icons.close),
-                            onPressed: () => setState(() => _cart.removeAt(i)),
-                          ),
-                        ],
+              Text('Menu', style: theme.textTheme.titleSmall),
+              const SizedBox(width: 12),
+              if (items.length > 8)
+                Expanded(
+                  child: SizedBox(
+                    height: 40,
+                    child: TextField(
+                      onChanged: (v) => setState(() => _search = v),
+                      decoration: const InputDecoration(
+                        hintText: 'Find an item',
+                        prefixIcon: Icon(Icons.search, size: 20),
+                        contentPadding: EdgeInsets.zero,
                       ),
                     ),
-                  const Divider(height: 1),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
-                    child: Row(
-                      children: [
-                        Text('Order total', style: theme.textTheme.titleSmall),
-                        const Spacer(),
-                        Text(formatPrice(_cartTotal),
-                            style: theme.textTheme.titleMedium),
-                      ],
-                    ),
                   ),
-                ],
-              ),
-            ),
-          ],
-          const SizedBox(height: 12),
-          FilledButton.icon(
-            onPressed:
-                (_waiter == null || _cart.isEmpty || _busy) ? null : _place,
-            icon: _busy
-                ? const SizedBox(
-                    height: 18,
-                    width: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2))
-                : const Icon(Icons.check),
-            label: Text(_waiter == null && _cart.isNotEmpty
-                ? 'Select a waiter'
-                : 'Place order'),
+                ),
+            ],
           ),
-        ],
-      ),
+        ),
+        Expanded(
+          child: itemsAsync.isLoading && items.isEmpty
+              ? const Center(child: CircularProgressIndicator())
+              : items.isEmpty
+                  ? const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(24),
+                        child: Text(
+                            'The menu is empty. Ask the owner to add items.',
+                            textAlign: TextAlign.center),
+                      ),
+                    )
+                  : GridView.builder(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                      gridDelegate:
+                          const SliverGridDelegateWithMaxCrossAxisExtent(
+                        maxCrossAxisExtent: 170,
+                        mainAxisExtent: 92,
+                        crossAxisSpacing: 10,
+                        mainAxisSpacing: 10,
+                      ),
+                      itemCount: shown.length,
+                      itemBuilder: (_, i) => _ItemTile(
+                        item: shown[i],
+                        qty: _qty[shown[i].id] ?? 0,
+                        onTap: () => _add(shown[i]),
+                      ),
+                    ),
+        ),
+
+        // ---- the slip ----
+        OrderSlip(
+          lines: lines,
+          waiterName: waiter?.name,
+          busy: _busy,
+          onChange: _change,
+          onClear: () => setState(() => _qty.clear()),
+          onPlace: waiter == null
+              ? null
+              : (total) => _place(waiter, lines, total),
+        ),
+      ],
     );
   }
 }
 
-class _TodayOrders extends ConsumerWidget {
-  const _TodayOrders({required this.cafeId, required this.shopId});
-  final String cafeId;
-  final String shopId;
-
-  String _time(DateTime? t) {
-    if (t == null) return '';
-    final h = t.hour % 12 == 0 ? 12 : t.hour % 12;
-    return '$h:${t.minute.toString().padLeft(2, '0')} ${t.hour < 12 ? 'AM' : 'PM'}';
-  }
-
-  Future<void> _undo(BuildContext context, WidgetRef ref, SaleOrder o) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Remove this order?'),
-        content: Text('${o.lines.length} item(s) by ${o.waiterName}, '
-            'total ${formatPrice(o.total)}'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel')),
-          FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Remove')),
-        ],
-      ),
-    );
-    if (ok == true) {
-      await ref.read(salesServiceProvider).deleteOrder(cafeId, o);
-    }
-  }
+class _ItemTile extends StatelessWidget {
+  const _ItemTile({required this.item, required this.qty, required this.onTap});
+  final Item item;
+  final int qty;
+  final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final sales =
-        ref.watch(todaySalesProvider((cafeId: cafeId, shopId: shopId)));
-    return sales.when(
-      loading: () => const Padding(
-          padding: EdgeInsets.all(24),
-          child: Center(child: CircularProgressIndicator())),
-      error: (e, _) => Padding(
-          padding: const EdgeInsets.all(24),
-          child: Center(child: Text('Could not load sales: $e'))),
-      data: (lines) {
-        final orders = SaleOrder.group(lines);
-        final total = lines.fold<num>(0, (sum, s) => sum + s.total);
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Container(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              child: Row(
-                children: [
-                  Text("Today's orders (${orders.length})",
-                      style: Theme.of(context).textTheme.titleSmall),
-                  const Spacer(),
-                  Text(formatPrice(total),
-                      style: Theme.of(context).textTheme.titleMedium),
-                ],
-              ),
-            ),
-            if (orders.isEmpty)
-              const Padding(
-                  padding: EdgeInsets.all(24),
-                  child: Center(child: Text('No orders yet today.'))),
-            for (final o in orders) ...[
-              ListTile(
-                title: Text(o.lines.map((l) => '${l.qty} × ${l.itemName}').join(', ')),
-                subtitle: Text('${o.waiterName} · ${_time(o.createdAt)}'),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final on = qty > 0;
+    return Semantics(
+      button: true,
+      label: '${item.name}, ${formatMoney(item.price)}${on ? ', $qty in order' : ''}. Tap to add one.',
+      excludeSemantics: true,
+      child: Material(
+        color: on ? HColors.inkSoft : HColors.slip,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+          side: BorderSide(color: on ? HColors.ink : HColors.rule, width: on ? 2 : 1),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 10, 10, 10),
+            child: Stack(
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(formatPrice(o.total),
-                        style: Theme.of(context).textTheme.titleMedium),
-                    IconButton(
-                      tooltip: 'Remove order',
-                      icon: const Icon(Icons.undo),
-                      onPressed: () => _undo(context, ref, o),
+                    Padding(
+                      padding: EdgeInsets.only(right: on ? 30 : 0),
+                      child: Text(item.name,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.titleSmall?.copyWith(height: 1.2)),
                     ),
+                    const Spacer(),
+                    Text(formatMoney(item.price),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                            color: on ? HColors.ink : HColors.pencil,
+                            fontFeatures: tabular)),
                   ],
                 ),
-              ),
-              const Divider(height: 1),
-            ],
-          ],
-        );
-      },
+                if (on)
+                  Positioned(
+                    top: 0,
+                    right: 0,
+                    child: Container(
+                      constraints: const BoxConstraints(minWidth: 26),
+                      height: 26,
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                          color: HColors.ink,
+                          borderRadius: BorderRadius.circular(13)),
+                      child: Text('$qty',
+                          style: theme.textTheme.labelLarge?.copyWith(
+                              color: Colors.white, fontFeatures: tabular)),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

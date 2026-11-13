@@ -64,7 +64,7 @@ class _CreateCafeViewState extends ConsumerState<CreateCafeView> {
                 controller: _name,
                 textCapitalization: TextCapitalization.words,
                 decoration: const InputDecoration(
-                    labelText: 'Cafe name', border: OutlineInputBorder()),
+                    labelText: 'Cafe name'),
                 onSubmitted: (_) => _create(),
               ),
               if (_error != null) ...[
