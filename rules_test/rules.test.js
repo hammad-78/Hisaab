@@ -52,8 +52,12 @@ beforeEach(async () => {
     await setDoc(doc(f, 'cafes/c2'), { name: 'Other', ownerId: 'owner2' });
     await setDoc(doc(f, 'cafes/c1/shops/s1'), { name: 'SSA', managerUid: 'm1' });
     await setDoc(doc(f, 'cafes/c1/shops/s2'), { name: 'B', managerUid: 'm2' });
-    await setDoc(doc(f, 'cafes/c1/items/i1'), { name: 'Tea', price: 50 });
+    // Each shop has its own menu and waiters.
+    await setDoc(doc(f, 'cafes/c1/items/i1'), { name: 'Tea', price: 50, shopId: 's1' });
+    await setDoc(doc(f, 'cafes/c1/items/i2'), { name: 'Cake', price: 90, shopId: 's2' });
+    await setDoc(doc(f, 'cafes/c1/items/legacy'), { name: 'Old', price: 10 }); // pre-change item, no shop
     await setDoc(doc(f, 'cafes/c1/waiters/w1'), { name: 'Ali', shopId: 's1' });
+    await setDoc(doc(f, 'cafes/c1/waiters/w2'), { name: 'Bilal', shopId: 's2' });
     await setDoc(doc(f, 'cafes/c1/sales/sale_s1'), sale('s1', 'm1'));
     await setDoc(doc(f, 'cafes/c1/sales/sale_s2'), sale('s2', 'm2'));
     await setDoc(doc(f, 'cafes/c2/sales/sale_x1'), sale('x1', 'm3'));
@@ -155,12 +159,19 @@ describe('owner', () => {
     await assertFails(deleteDoc(doc(db('owner1'), 'users/m3')));
   });
 
-  test('manages items and waiters', async () => {
+  test('reads every shop\'s menu and waiters (as the Shops tab does)', async () => {
     const f = db('owner1');
-    await assertSucceeds(setDoc(doc(f, 'cafes/c1/items/i2'), { name: 'Cake', price: 20 }));
-    await assertSucceeds(updateDoc(doc(f, 'cafes/c1/items/i2'), { price: 25 }));
-    await assertSucceeds(deleteDoc(doc(f, 'cafes/c1/items/i2')));
-    await assertSucceeds(setDoc(doc(f, 'cafes/c1/waiters/w2'), { name: 'Bilal', shopId: 's2' }));
+    await assertSucceeds(getDocs(query(collection(f, 'cafes/c1/items'))));
+    await assertSucceeds(getDocs(query(collection(f, 'cafes/c1/waiters'))));
+  });
+  test('cannot add, edit or delete menu items or waiters (managers do that)', async () => {
+    const f = db('owner1');
+    await assertFails(setDoc(doc(f, 'cafes/c1/items/i9'), { name: 'X', price: 1, shopId: 's1' }));
+    await assertFails(updateDoc(doc(f, 'cafes/c1/items/i1'), { price: 1 }));
+    await assertFails(deleteDoc(doc(f, 'cafes/c1/items/i1')));
+    await assertFails(setDoc(doc(f, 'cafes/c1/waiters/w9'), { name: 'X', shopId: 's1' }));
+    await assertFails(updateDoc(doc(f, 'cafes/c1/waiters/w1'), { name: 'Y' }));
+    await assertFails(deleteDoc(doc(f, 'cafes/c1/waiters/w1')));
   });
 
   test('reads all sales of own cafe by date range (reports query)', async () => {
@@ -184,13 +195,61 @@ describe('owner', () => {
 
 // ---------------------------------------------------------------- manager
 describe('manager', () => {
-  test('reads own profile, cafe, shops, items and waiters', async () => {
+  test('reads own profile, cafe and shops', async () => {
     const f = db('m1');
     await assertSucceeds(getDoc(doc(f, 'users/m1')));
     await assertSucceeds(getDoc(doc(f, 'cafes/c1')));
     await assertSucceeds(getDocs(query(collection(f, 'cafes/c1/shops'))));
-    await assertSucceeds(getDocs(query(collection(f, 'cafes/c1/items'))));
-    await assertSucceeds(getDocs(query(collection(f, 'cafes/c1/waiters'))));
+  });
+
+  test('reads own shop\'s menu and waiters (as the app does)', async () => {
+    const f = db('m1');
+    await assertSucceeds(getDocs(query(collection(f, 'cafes/c1/items'), where('shopId', '==', 's1'))));
+    await assertSucceeds(getDocs(query(collection(f, 'cafes/c1/waiters'), where('shopId', '==', 's1'))));
+  });
+  test('cannot read another shop\'s menu or waiters', async () => {
+    const f = db('m1');
+    await assertFails(getDocs(query(collection(f, 'cafes/c1/items'), where('shopId', '==', 's2'))));
+    await assertFails(getDocs(collection(f, 'cafes/c1/items')));
+    await assertFails(getDoc(doc(f, 'cafes/c1/items/i2')));
+    await assertFails(getDoc(doc(f, 'cafes/c1/waiters/w2')));
+    await assertFails(getDoc(doc(f, 'cafes/c1/items/legacy')));
+  });
+
+  test('manages own shop\'s menu (as the app does)', async () => {
+    const f = db('m1');
+    await assertSucceeds(setDoc(doc(f, 'cafes/c1/items/n1'),
+      { name: 'Samosa', price: 60, shopId: 's1', createdAt: serverTimestamp() }));
+    await assertSucceeds(updateDoc(doc(f, 'cafes/c1/items/n1'), { name: 'Samosa (2 pcs)', price: 110 }));
+    await assertSucceeds(deleteDoc(doc(f, 'cafes/c1/items/n1')));
+  });
+  test('manages own shop\'s waiters (as the app does)', async () => {
+    const f = db('m1');
+    await assertSucceeds(setDoc(doc(f, 'cafes/c1/waiters/n1'),
+      { name: 'Usman', shopId: 's1', createdAt: serverTimestamp() }));
+    await assertSucceeds(updateDoc(doc(f, 'cafes/c1/waiters/n1'), { name: 'Usman Ali' }));
+    await assertSucceeds(deleteDoc(doc(f, 'cafes/c1/waiters/n1')));
+  });
+  test('cannot touch another shop\'s menu or waiters', async () => {
+    const f = db('m1');
+    await assertFails(setDoc(doc(f, 'cafes/c1/items/x'), { name: 'X', price: 1, shopId: 's2' }));
+    await assertFails(updateDoc(doc(f, 'cafes/c1/items/i2'), { price: 1 }));
+    await assertFails(deleteDoc(doc(f, 'cafes/c1/items/i2')));
+    await assertFails(setDoc(doc(f, 'cafes/c1/waiters/x'), { name: 'X', shopId: 's2' }));
+    await assertFails(deleteDoc(doc(f, 'cafes/c1/waiters/w2')));
+    await assertFails(setDoc(doc(f, 'cafes/c2/items/x'), { name: 'X', price: 1, shopId: 'x1' }));
+  });
+  test('cannot move an item or waiter to another shop', async () => {
+    const f = db('m1');
+    await assertFails(updateDoc(doc(f, 'cafes/c1/items/i1'), { shopId: 's2' }));
+    await assertFails(updateDoc(doc(f, 'cafes/c1/waiters/w1'), { shopId: 's2' }));
+  });
+  test('rejects bad menu data', async () => {
+    const f = db('m1');
+    await assertFails(setDoc(doc(f, 'cafes/c1/items/x'), { name: '', price: 10, shopId: 's1' }));
+    await assertFails(setDoc(doc(f, 'cafes/c1/items/x'), { name: 'Tea', price: -5, shopId: 's1' }));
+    await assertFails(setDoc(doc(f, 'cafes/c1/items/x'), { name: 'Tea', price: '50', shopId: 's1' }));
+    await assertFails(setDoc(doc(f, 'cafes/c1/waiters/x'), { name: '', shopId: 's1' }));
   });
   test('cannot read other users\' profiles', async () => {
     await assertFails(getDoc(doc(db('m1'), 'users/m2')));
@@ -201,12 +260,10 @@ describe('manager', () => {
     await assertFails(updateDoc(doc(db('m1'), 'users/m1'), { role: 'owner' }));
     await assertFails(updateDoc(doc(db('m1'), 'users/m1'), { cafeId: 'c2' }));
   });
-  test('cannot edit menu, waiters, shops or the cafe', async () => {
+  test('cannot edit shops or the cafe', async () => {
     const f = db('m1');
-    await assertFails(setDoc(doc(f, 'cafes/c1/items/i9'), { name: 'X', price: 1 }));
-    await assertFails(updateDoc(doc(f, 'cafes/c1/items/i1'), { price: 1 }));
-    await assertFails(setDoc(doc(f, 'cafes/c1/waiters/w9'), { name: 'X', shopId: 's1' }));
     await assertFails(setDoc(doc(f, 'cafes/c1/shops/s9'), { name: 'X' }));
+    await assertFails(updateDoc(doc(f, 'cafes/c1/shops/s1'), { name: 'X' }));
     await assertFails(updateDoc(doc(f, 'cafes/c1'), { name: 'X' }));
   });
   test('cannot read another cafe', async () => {

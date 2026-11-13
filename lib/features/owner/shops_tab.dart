@@ -59,6 +59,8 @@ class ShopsTab extends ConsumerWidget {
       );
     }
 
+    final shopIds = {for (final s in shops) s.id};
+
     return ListView(
       padding: const EdgeInsets.only(bottom: 96),
       children: [
@@ -68,8 +70,9 @@ class ShopsTab extends ConsumerWidget {
           todayTotal: sales == null ? null : todayTotal,
           todayOrders: todayOrders,
           shopCount: shops.length,
-          waiterCount: waiters.length,
-          itemCount: items.length,
+          waiterCount: waiters.where((w) => shopIds.contains(w.shopId)).length,
+          // Only items on a shop's menu (older cafe-wide items don't count).
+          itemCount: items.where((i) => shopIds.contains(i.shopId)).length,
         ),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
@@ -94,6 +97,7 @@ class ShopsTab extends ConsumerWidget {
             _ShopRow(
               shop: s,
               waiters: waiters.where((w) => w.shopId == s.id).toList(),
+              itemCount: items.where((i) => i.shopId == s.id).length,
               today: sales == null ? null : (byShop[s.id] ?? _ShopToday()),
             ),
             const Divider(),
@@ -256,15 +260,18 @@ class _Fact extends StatelessWidget {
   }
 }
 
-/// One shop: tap to open its manager, waiters and live sales for today.
+/// One shop: tap to open its manager, menu, waiters and live sales for today.
+/// Read-only: the shop's manager looks after its menu and waiters.
 class _ShopRow extends StatelessWidget {
   const _ShopRow({
     required this.shop,
     required this.waiters,
+    required this.itemCount,
     required this.today,
   });
   final Shop shop;
   final List<Waiter> waiters;
+  final int itemCount;
   final _ShopToday? today; // null while loading
 
   @override
@@ -293,10 +300,16 @@ class _ShopRow extends StatelessWidget {
         _row(context, 'Manager', shop.managerName, shop.managerEmail),
         _row(
           context,
+          'Menu',
+          itemCount == 1 ? '1 item' : '$itemCount items',
+          itemCount == 0 ? 'None yet. The manager adds the menu.' : null,
+        ),
+        _row(
+          context,
           'Waiters',
           '${waiters.length}',
           waiters.isEmpty
-              ? 'None yet. Add them in the Waiters tab.'
+              ? 'None yet. The manager adds waiters.'
               : waiters.map((w) => w.name).join(', '),
         ),
         _row(

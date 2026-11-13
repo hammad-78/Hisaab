@@ -10,15 +10,27 @@ import '../../models/waiter.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/cafe_provider.dart';
 import '../../providers/sales_provider.dart';
+import 'menu_tab.dart';
 import 'today_orders_screen.dart';
+import 'waiters_tab.dart';
 import 'widgets/order_slip.dart';
 
-class ManagerHome extends ConsumerWidget {
+/// The manager's portal: the counter for taking orders, plus this shop's
+/// menu and waiters, which the manager looks after.
+class ManagerHome extends ConsumerStatefulWidget {
   const ManagerHome({super.key, required this.user});
   final AppUser user;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ManagerHome> createState() => _ManagerHomeState();
+}
+
+class _ManagerHomeState extends ConsumerState<ManagerHome> {
+  int _tab = 0; // 0 counter, 1 menu, 2 waiters
+
+  @override
+  Widget build(BuildContext context) {
+    final user = widget.user;
     final cafeId = user.cafeId;
     final shopId = user.shopId;
 
@@ -62,13 +74,55 @@ class ManagerHome extends ConsumerWidget {
           _logout(ref),
         ],
       ),
-      body: _Counter(user: user, cafeId: cafeId, shopId: shopId),
+      // IndexedStack keeps the counter alive, so a half-built order survives
+      // a quick trip to the Menu tab.
+      body: IndexedStack(
+        index: _tab,
+        children: [
+          _Counter(
+            user: user,
+            cafeId: cafeId,
+            shopId: shopId,
+            onOpenTab: (i) => setState(() => _tab = i),
+          ),
+          MenuTab(cafeId: cafeId, shopId: shopId),
+          WaitersTab(cafeId: cafeId, shopId: shopId),
+        ],
+      ),
+      floatingActionButton: switch (_tab) {
+        1 => FloatingActionButton.extended(
+          icon: const Icon(Icons.add),
+          label: const Text('Add item'),
+          onPressed: () =>
+              showItemDialog(context, ref, cafeId: cafeId, shopId: shopId),
+        ),
+        2 => FloatingActionButton.extended(
+          icon: const Icon(Icons.person_add),
+          label: const Text('Add waiter'),
+          onPressed: () =>
+              showWaiterDialog(context, ref, cafeId: cafeId, shopId: shopId),
+        ),
+        _ => null,
+      },
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _tab,
+        onDestinationSelected: (i) => setState(() => _tab = i),
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.point_of_sale),
+            label: 'Counter',
+          ),
+          NavigationDestination(icon: Icon(Icons.coffee), label: 'Menu'),
+          NavigationDestination(icon: Icon(Icons.person), label: 'Waiters'),
+        ],
+      ),
     );
   }
 
   Widget _logout(WidgetRef ref) => IconButton(
     tooltip: 'Log out',
     icon: const Icon(Icons.logout),
+    color: HTokens.light.khataRed,
     onPressed: () => ref.read(authServiceProvider).signOut(),
   );
 }
@@ -79,10 +133,14 @@ class _Counter extends ConsumerStatefulWidget {
     required this.user,
     required this.cafeId,
     required this.shopId,
+    required this.onOpenTab,
   });
   final AppUser user;
   final String cafeId;
   final String shopId;
+
+  /// Jumps to the Menu (1) or Waiters (2) tab from an empty state.
+  final void Function(int tab) onOpenTab;
 
   @override
   ConsumerState<_Counter> createState() => _CounterState();
@@ -149,12 +207,10 @@ class _CounterState extends ConsumerState<_Counter> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final shopRef = (cafeId: widget.cafeId, shopId: widget.shopId);
     final waiters =
-        (ref.watch(waitersProvider(widget.cafeId)).valueOrNull ??
-                const <Waiter>[])
-            .where((w) => w.shopId == widget.shopId)
-            .toList();
-    final itemsAsync = ref.watch(itemsProvider(widget.cafeId));
+        ref.watch(shopWaitersProvider(shopRef)).valueOrNull ?? const <Waiter>[];
+    final itemsAsync = ref.watch(shopItemsProvider(shopRef));
     final items = itemsAsync.valueOrNull ?? const <Item>[];
     final byId = {for (final i in items) i.id: i};
 
@@ -181,12 +237,14 @@ class _CounterState extends ConsumerState<_Counter> {
         SizedBox(
           height: 48,
           child: waiters.isEmpty
-              ? Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Text(
-                    'No waiters in this shop yet. Ask the owner to add one.',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: context.h.pencil,
+              ? Align(
+                  alignment: Alignment.centerLeft,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: TextButton.icon(
+                      onPressed: () => widget.onOpenTab(2),
+                      icon: const Icon(Icons.person_add),
+                      label: const Text('No waiters yet. Add waiters'),
                     ),
                   ),
                 )
@@ -239,12 +297,26 @@ class _CounterState extends ConsumerState<_Counter> {
           child: itemsAsync.isLoading && items.isEmpty
               ? const Center(child: CircularProgressIndicator())
               : items.isEmpty
-              ? const Center(
+              ? Center(
                   child: Padding(
-                    padding: EdgeInsets.all(24),
-                    child: Text(
-                      'The menu is empty. Ask the owner to add items.',
-                      textAlign: TextAlign.center,
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text(
+                          'Your menu is empty. Add what this shop sells to start taking orders.',
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 12),
+                        OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            minimumSize: const Size(0, 48),
+                          ),
+                          onPressed: () => widget.onOpenTab(1),
+                          icon: const Icon(Icons.add),
+                          label: const Text('Add menu items'),
+                        ),
+                      ],
                     ),
                   ),
                 )

@@ -35,14 +35,30 @@ class CafeService {
   CollectionReference<Map<String, dynamic>> _col(String cafeId, String name) =>
       _db.collection('cafes').doc(cafeId).collection(name);
 
-  // ---- menu items (shared by every shop in the cafe) ----
+  static int _byName(dynamic a, dynamic b) => (a.name as String)
+      .toLowerCase()
+      .compareTo((b.name as String).toLowerCase());
+
+  // ---- menu items: each shop has its own, managed by its manager ----
+
+  /// Every item in the cafe (owner only: counts per shop).
   Stream<List<Item>> items(String cafeId) => _col(
     cafeId,
     'items',
   ).orderBy('name').snapshots().map((q) => q.docs.map(Item.fromDoc).toList());
 
+  /// One shop's menu. Sorted here: filter + orderBy would need an index.
+  Stream<List<Item>> shopItems(String cafeId, String shopId) =>
+      _col(cafeId, 'items')
+          .where('shopId', isEqualTo: shopId)
+          .snapshots()
+          .map((q) => q.docs.map(Item.fromDoc).toList()..sort(_byName));
+
+  /// Creates an item for [shopId], or renames/re-prices an existing one.
+  /// An item never moves to another shop.
   Future<void> saveItem(
     String cafeId, {
+    required String shopId,
     String? id,
     required String name,
     required num price,
@@ -50,30 +66,46 @@ class CafeService {
     final data = {'name': name.trim(), 'price': price};
     final col = _col(cafeId, 'items');
     return id == null
-        ? col.add({...data, 'createdAt': FieldValue.serverTimestamp()})
+        ? col.add({
+            ...data,
+            'shopId': shopId,
+            'createdAt': FieldValue.serverTimestamp(),
+          })
         : col.doc(id).update(data);
   }
 
   Future<void> deleteItem(String cafeId, String id) =>
       _col(cafeId, 'items').doc(id).delete();
 
-  // ---- waiters (each belongs to one shop) ----
+  // ---- waiters: each belongs to one shop, managed by its manager ----
+
+  /// Every waiter in the cafe (owner only).
   Stream<List<Waiter>> waiters(String cafeId) => _col(
     cafeId,
     'waiters',
   ).orderBy('name').snapshots().map((q) => q.docs.map(Waiter.fromDoc).toList());
 
+  /// One shop's waiters, sorted by name.
+  Stream<List<Waiter>> shopWaiters(String cafeId, String shopId) =>
+      _col(cafeId, 'waiters')
+          .where('shopId', isEqualTo: shopId)
+          .snapshots()
+          .map((q) => q.docs.map(Waiter.fromDoc).toList()..sort(_byName));
+
   Future<void> saveWaiter(
     String cafeId, {
+    required String shopId,
     String? id,
     required String name,
-    required String shopId,
   }) {
-    final data = {'name': name.trim(), 'shopId': shopId};
     final col = _col(cafeId, 'waiters');
     return id == null
-        ? col.add({...data, 'createdAt': FieldValue.serverTimestamp()})
-        : col.doc(id).update(data);
+        ? col.add({
+            'name': name.trim(),
+            'shopId': shopId,
+            'createdAt': FieldValue.serverTimestamp(),
+          })
+        : col.doc(id).update({'name': name.trim()});
   }
 
   Future<void> deleteWaiter(String cafeId, String id) =>

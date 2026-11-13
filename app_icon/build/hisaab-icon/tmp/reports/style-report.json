@@ -1,0 +1,102 @@
+{
+  "mode": "icon-spec-authoring",
+  "layout": "delivery",
+  "spec": "D:\\flutter_projects\\Hisaab\\app_icon\\build\\hisaab-icon\\tmp\\work\\spec.json",
+  "work_spec": "tmp/work/spec.json",
+  "name": "Hisaab",
+  "canvas": 1024,
+  "target_platforms": [],
+  "deliverable_type": null,
+  "source_reference": "brief: calm, trustworthy shop sales and manager app; simple geometric mark",
+  "brief": "Geometric H monogram on deep teal. Two pillars with a mint crossbar, reads as a ledger and a balanced scale.",
+  "renderer": "@resvg/resvg-js",
+  "generated_files": [
+    "hisaab-icon.preview.svg",
+    "hisaab-icon.preview.png",
+    "hisaab-icon.svg",
+    "hisaab-icon.png",
+    "layers/01-background.svg",
+    "layers/02-pillars.svg",
+    "layers/03-crossbar.svg",
+    "tmp/README.md",
+    "tmp/reports/style-report.json",
+    "tmp/reports/package-verification.json",
+    "tmp/reports/reference-diff.png",
+    "tmp/reports/reference-overlay.png",
+    "tmp/reports/reference-side-by-side.png",
+    "tmp/reports/visual-review.json"
+  ],
+  "generated_directories": [
+    "tmp/reports",
+    "layers",
+    "tmp"
+  ],
+  "preview_svg": "hisaab-icon.preview.svg",
+  "preview_png": "hisaab-icon.preview.png",
+  "app_svg": "hisaab-icon.svg",
+  "app_png": "hisaab-icon.png",
+  "layers": [
+    "layers/01-background.svg",
+    "layers/02-pillars.svg",
+    "layers/03-crossbar.svg"
+  ],
+  "apple_adapter": null,
+  "preview_background_layers": [
+    {
+      "layer": "background",
+      "source_layer": "layers/01-background.svg",
+      "role": "preview-only-simple-fill"
+    }
+  ],
+  "icon_composer_layer_decisions": [],
+  "background_mode": "spec",
+  "semantic_review": {
+    "status": "exact-enough",
+    "identity_risk": "low",
+    "basis": "original geometric H monogram authored in this task; no external brand identity",
+    "route": "semantic-svg",
+    "notes": "Three flat layers: background, white pillars, mint crossbar. No effects."
+  },
+  "source_analysis": {
+    "fidelity_target": "simple, calm, centered H monogram with strong contrast at 64px",
+    "identity_risk": "low",
+    "route": "semantic-svg",
+    "must_preserve": [
+      "two equal rounded pillars",
+      "mint crossbar centered vertically",
+      "solid deep teal background"
+    ],
+    "must_not_add": [
+      "gradients, glow, shadow, bevel, frame, text, PNG fallback"
+    ],
+    "components": [
+      {
+        "id": "pillars",
+        "layer": "pillars",
+        "format": "svg",
+        "spec_constraints": [
+          "two redrawn rounded rectangles, flat white"
+        ]
+      },
+      {
+        "id": "crossbar",
+        "layer": "crossbar",
+        "format": "svg",
+        "spec_constraints": [
+          "one redrawn rectangle, flat mint, abutting both pillars"
+        ]
+      }
+    ],
+    "acceptance_checks": [
+      "mark readable at 64px",
+      "no svg_material_warnings"
+    ]
+  },
+  "warnings": [],
+  "claims": [
+    "spec-driven reusable cross-platform icon source package",
+    "semantic source layers retained",
+    "rounded preview PNG rendered by @resvg/resvg-js",
+    "unrounded app/source canvas outputs retained separately from preview masking"
+  ]
+}

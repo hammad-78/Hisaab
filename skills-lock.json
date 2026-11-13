@@ -1,0 +1,17 @@
+{
+  "version": 2,
+  "skills": {
+    "app-icon-gen": {
+      "source": "xzhih/app-icon-skill",
+      "sourceType": "github",
+      "skillPath": "skills/app-icon-gen/SKILL.md",
+      "computedHash": "a950a555340a903512f1566f1e45c31e9bfb34d63344d152544d2036d79c2dd1"
+    },
+    "app-icon-template-creator": {
+      "source": "xzhih/app-icon-skill",
+      "sourceType": "github",
+      "skillPath": "skills/app-icon-template-creator/SKILL.md",
+      "computedHash": "1e77c4a39250cd5ba9f3f7ef7c1e16132f5bc899fc9bf3efaded7c9879b044bb"
+    }
+  }
+}

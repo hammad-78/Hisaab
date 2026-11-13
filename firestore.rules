@@ -28,6 +28,14 @@ service cloud.firestore {
       return isCafeManager(cafeId) && userDoc().shopId == shopId;
     }
 
+    function validName(name) {
+      return name is string && name.size() > 0 && name.size() <= 80;
+    }
+
+    function validItem(d) {
+      return validName(d.name) && d.price is number && d.price >= 0;
+    }
+
     // ---------- users ----------
     match /users/{uid} {
       // A user reads their own profile; an owner reads the managers of their cafe.
@@ -93,16 +101,30 @@ service cloud.firestore {
         allow write: if isOwnerOfCafe(cafeId);
       }
 
-      // Menu items: owner manages, managers can read.
+      // Menu items: each shop's manager manages that shop's menu.
+      // The owner can see every shop's menu but does not edit it.
       match /items/{itemId} {
-        allow read: if isOwnerOfCafe(cafeId) || isCafeManager(cafeId);
-        allow write: if isOwnerOfCafe(cafeId);
+        allow read: if isOwnerOfCafe(cafeId)
+          || isManagerOfShop(cafeId, resource.data.shopId);
+        allow create: if isManagerOfShop(cafeId, request.resource.data.shopId)
+          && validItem(request.resource.data);
+        allow update: if isManagerOfShop(cafeId, resource.data.shopId)
+          && request.resource.data.shopId == resource.data.shopId
+          && validItem(request.resource.data);
+        allow delete: if isManagerOfShop(cafeId, resource.data.shopId);
       }
 
-      // Waiters: owner manages, managers can read.
+      // Waiters: each shop's manager manages that shop's waiters.
+      // The owner can see them but does not edit them.
       match /waiters/{waiterId} {
-        allow read: if isOwnerOfCafe(cafeId) || isCafeManager(cafeId);
-        allow write: if isOwnerOfCafe(cafeId);
+        allow read: if isOwnerOfCafe(cafeId)
+          || isManagerOfShop(cafeId, resource.data.shopId);
+        allow create: if isManagerOfShop(cafeId, request.resource.data.shopId)
+          && validName(request.resource.data.name);
+        allow update: if isManagerOfShop(cafeId, resource.data.shopId)
+          && request.resource.data.shopId == resource.data.shopId
+          && validName(request.resource.data.name);
+        allow delete: if isManagerOfShop(cafeId, resource.data.shopId);
       }
 
       // Sales: managers record and undo sales for their own shop only.

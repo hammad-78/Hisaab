@@ -157,7 +157,7 @@ class TodayOrdersScreen extends ConsumerWidget {
                                 IconButton(
                                   tooltip: 'Remove order',
                                   icon: const Icon(Icons.delete_outline),
-                                  color: context.h.pencil,
+                                  color: context.h.khataRed,
                                   onPressed: () => _remove(context, ref, o),
                                 ),
                               ],

@@ -1,0 +1,42 @@
+{
+  "name": "Hisaab",
+  "source_reference": "brief: calm, trustworthy shop sales and manager app; simple geometric mark",
+  "brief": "Geometric H monogram on deep teal. Two pillars with a mint crossbar, reads as a ledger and a balanced scale.",
+  "semantic_review": {
+    "status": "exact-enough",
+    "identity_risk": "low",
+    "basis": "original geometric H monogram authored in this task; no external brand identity",
+    "route": "semantic-svg",
+    "notes": "Three flat layers: background, white pillars, mint crossbar. No effects."
+  },
+  "source_analysis": {
+    "fidelity_target": "simple, calm, centered H monogram with strong contrast at 64px",
+    "identity_risk": "low",
+    "route": "semantic-svg",
+    "must_preserve": ["two equal rounded pillars", "mint crossbar centered vertically", "solid deep teal background"],
+    "must_not_add": ["gradients, glow, shadow, bevel, frame, text, PNG fallback"],
+    "components": [
+      { "id": "pillars", "layer": "pillars", "format": "svg", "spec_constraints": ["two redrawn rounded rectangles, flat white"] },
+      { "id": "crossbar", "layer": "crossbar", "format": "svg", "spec_constraints": ["one redrawn rectangle, flat mint, abutting both pillars"] }
+    ],
+    "acceptance_checks": ["mark readable at 64px", "no svg_material_warnings"]
+  },
+  "fill": { "solid": "extended-srgb:0.05882,0.32157,0.34118,1.00000" },
+  "layers": [
+    {
+      "name": "background",
+      "svg": "<rect width=\"1024\" height=\"1024\" fill=\"#0F5257\"/>",
+      "composer": { "include": false }
+    },
+    {
+      "name": "pillars",
+      "svg": "<rect x=\"280\" y=\"262\" width=\"112\" height=\"500\" rx=\"56\" fill=\"#FFFFFF\"/><rect x=\"632\" y=\"262\" width=\"112\" height=\"500\" rx=\"56\" fill=\"#FFFFFF\"/>",
+      "composer": { "format": "svg", "reason": "flat geometric foreground" }
+    },
+    {
+      "name": "crossbar",
+      "svg": "<rect x=\"392\" y=\"458\" width=\"240\" height=\"108\" fill=\"#7FE0C4\"/>",
+      "composer": { "format": "svg", "reason": "flat geometric accent" }
+    }
+  ]
+}
