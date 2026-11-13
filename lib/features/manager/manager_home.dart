@@ -29,8 +29,9 @@ class ManagerHome extends ConsumerWidget {
           child: Padding(
             padding: EdgeInsets.all(24),
             child: Text(
-                'This login is not linked to a shop. Ask the cafe owner to add you as a shop manager.',
-                textAlign: TextAlign.center),
+              'This login is not linked to a shop. Ask the cafe owner to add you as a shop manager.',
+              textAlign: TextAlign.center,
+            ),
           ),
         ),
       );
@@ -39,19 +40,22 @@ class ManagerHome extends ConsumerWidget {
     final shops = ref.watch(shopsProvider(cafeId)).valueOrNull ?? const [];
     final shopName =
         shops.where((s) => s.id == shopId).map((s) => s.name).firstOrNull ?? '';
-    final today =
-        ref.watch(todaySalesProvider((cafeId: cafeId, shopId: shopId)));
-    final todayOrders =
-        today.valueOrNull?.map((s) => s.orderId).toSet().length;
+    final today = ref.watch(
+      todaySalesProvider((cafeId: cafeId, shopId: shopId)),
+    );
+    final todayOrders = today.valueOrNull?.map((s) => s.orderId).toSet().length;
 
     return Scaffold(
       appBar: AppBar(
         title: Text(shopName),
         actions: [
           TextButton.icon(
-            onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
                 builder: (_) =>
-                    TodayOrdersScreen(cafeId: cafeId, shopId: shopId))),
+                    TodayOrdersScreen(cafeId: cafeId, shopId: shopId),
+              ),
+            ),
             icon: const Icon(Icons.receipt_long),
             label: Text(todayOrders == null ? 'Today' : 'Today ($todayOrders)'),
           ),
@@ -63,16 +67,19 @@ class ManagerHome extends ConsumerWidget {
   }
 
   Widget _logout(WidgetRef ref) => IconButton(
-        tooltip: 'Log out',
-        icon: const Icon(Icons.logout),
-        onPressed: () => ref.read(authServiceProvider).signOut(),
-      );
+    tooltip: 'Log out',
+    icon: const Icon(Icons.logout),
+    onPressed: () => ref.read(authServiceProvider).signOut(),
+  );
 }
 
 /// The counter: pick a waiter, tap menu items to build the slip, place it.
 class _Counter extends ConsumerStatefulWidget {
-  const _Counter(
-      {required this.user, required this.cafeId, required this.shopId});
+  const _Counter({
+    required this.user,
+    required this.cafeId,
+    required this.shopId,
+  });
   final AppUser user;
   final String cafeId;
   final String shopId;
@@ -106,7 +113,9 @@ class _CounterState extends ConsumerState<_Counter> {
   Future<void> _place(Waiter waiter, List<SlipLine> lines, num total) async {
     setState(() => _busy = true);
     try {
-      await ref.read(salesServiceProvider).addOrder(
+      await ref
+          .read(salesServiceProvider)
+          .addOrder(
             cafeId: widget.cafeId,
             shopId: widget.shopId,
             managerUid: widget.user.uid,
@@ -115,12 +124,22 @@ class _CounterState extends ConsumerState<_Counter> {
           );
       if (!mounted) return;
       setState(() => _qty.clear());
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Order placed for ${waiter.name}: ${formatMoney(total)}')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Order placed for ${waiter.name}: ${formatMoney(total)}',
+          ),
+        ),
+      );
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text('Order not saved. Check your connection and try again. ($e)')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Order not saved. Check your connection and try again. ($e)',
+            ),
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -130,10 +149,11 @@ class _CounterState extends ConsumerState<_Counter> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final waiters = (ref.watch(waitersProvider(widget.cafeId)).valueOrNull ??
-            const <Waiter>[])
-        .where((w) => w.shopId == widget.shopId)
-        .toList();
+    final waiters =
+        (ref.watch(waitersProvider(widget.cafeId)).valueOrNull ??
+                const <Waiter>[])
+            .where((w) => w.shopId == widget.shopId)
+            .toList();
     final itemsAsync = ref.watch(itemsProvider(widget.cafeId));
     final items = itemsAsync.valueOrNull ?? const <Item>[];
     final byId = {for (final i in items) i.id: i};
@@ -146,8 +166,9 @@ class _CounterState extends ConsumerState<_Counter> {
     final waiter = waiters.where((w) => w.id == _waiterId).firstOrNull;
 
     final q = _search.trim().toLowerCase();
-    final shown =
-        q.isEmpty ? items : items.where((i) => i.name.toLowerCase().contains(q)).toList();
+    final shown = q.isEmpty
+        ? items
+        : items.where((i) => i.name.toLowerCase().contains(q)).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -162,9 +183,12 @@ class _CounterState extends ConsumerState<_Counter> {
           child: waiters.isEmpty
               ? Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Text('No waiters in this shop yet. Ask the owner to add one.',
-                      style: theme.textTheme.bodyMedium
-                          ?.copyWith(color: HColors.pencil)),
+                  child: Text(
+                    'No waiters in this shop yet. Ask the owner to add one.',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: context.h.pencil,
+                    ),
+                  ),
                 )
               : ListView.separated(
                   scrollDirection: Axis.horizontal,
@@ -179,7 +203,8 @@ class _CounterState extends ConsumerState<_Counter> {
                       selected: selected,
                       showCheckmark: false,
                       labelStyle: theme.textTheme.labelLarge?.copyWith(
-                          color: selected ? Colors.white : HColors.graphite),
+                        color: selected ? context.h.onInk : context.h.graphite,
+                      ),
                       onSelected: (_) => setState(() => _waiterId = w.id),
                     );
                   },
@@ -214,30 +239,32 @@ class _CounterState extends ConsumerState<_Counter> {
           child: itemsAsync.isLoading && items.isEmpty
               ? const Center(child: CircularProgressIndicator())
               : items.isEmpty
-                  ? const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(24),
-                        child: Text(
-                            'The menu is empty. Ask the owner to add items.',
-                            textAlign: TextAlign.center),
-                      ),
-                    )
-                  : GridView.builder(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                      gridDelegate:
-                          const SliverGridDelegateWithMaxCrossAxisExtent(
-                        maxCrossAxisExtent: 170,
-                        mainAxisExtent: 92,
-                        crossAxisSpacing: 10,
-                        mainAxisSpacing: 10,
-                      ),
-                      itemCount: shown.length,
-                      itemBuilder: (_, i) => _ItemTile(
-                        item: shown[i],
-                        qty: _qty[shown[i].id] ?? 0,
-                        onTap: () => _add(shown[i]),
-                      ),
+              ? const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Text(
+                      'The menu is empty. Ask the owner to add items.',
+                      textAlign: TextAlign.center,
                     ),
+                  ),
+                )
+              : GridView.builder(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                    maxCrossAxisExtent: 170,
+                    // Grow with the phone's text size so names never clip.
+                    mainAxisExtent:
+                        92 * (MediaQuery.textScalerOf(context).scale(16) / 16),
+                    crossAxisSpacing: 10,
+                    mainAxisSpacing: 10,
+                  ),
+                  itemCount: shown.length,
+                  itemBuilder: (_, i) => _ItemTile(
+                    item: shown[i],
+                    qty: _qty[shown[i].id] ?? 0,
+                    onTap: () => _add(shown[i]),
+                  ),
+                ),
         ),
 
         // ---- the slip ----
@@ -268,55 +295,73 @@ class _ItemTile extends StatelessWidget {
     final on = qty > 0;
     return Semantics(
       button: true,
-      label: '${item.name}, ${formatMoney(item.price)}${on ? ', $qty in order' : ''}. Tap to add one.',
+      label:
+          '${item.name}, ${formatMoney(item.price)}${on ? ', $qty in order' : ''}. Tap to add one.',
       excludeSemantics: true,
       child: Material(
-        color: on ? HColors.inkSoft : HColors.slip,
+        color: on ? context.h.inkSoft : context.h.slip,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
-          side: BorderSide(color: on ? HColors.ink : HColors.rule, width: on ? 2 : 1),
+          side: BorderSide(
+            color: on ? context.h.ink : context.h.rule,
+            width: on ? 2 : 1,
+          ),
         ),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,
           child: Padding(
             padding: const EdgeInsets.fromLTRB(12, 10, 10, 10),
-            child: Stack(
+            // Name gets the full width; the count badge sits beside the
+            // price so it never squeezes the name at large text sizes.
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                Text(
+                  item.name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleSmall?.copyWith(height: 1.2),
+                ),
+                const Spacer(),
+                Row(
                   children: [
-                    Padding(
-                      padding: EdgeInsets.only(right: on ? 30 : 0),
-                      child: Text(item.name,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.titleSmall?.copyWith(height: 1.2)),
+                    Expanded(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          formatMoney(item.price),
+                          maxLines: 1,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: on ? context.h.ink : context.h.pencil,
+                            fontFeatures: tabular,
+                          ),
+                        ),
+                      ),
                     ),
-                    const Spacer(),
-                    Text(formatMoney(item.price),
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                            color: on ? HColors.ink : HColors.pencil,
-                            fontFeatures: tabular)),
+                    if (on)
+                      Container(
+                        constraints: const BoxConstraints(
+                          minWidth: 26,
+                          minHeight: 26,
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 7),
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: context.h.ink,
+                          borderRadius: BorderRadius.circular(13),
+                        ),
+                        child: Text(
+                          '$qty',
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            color: context.h.onInk,
+                            fontFeatures: tabular,
+                          ),
+                        ),
+                      ),
                   ],
                 ),
-                if (on)
-                  Positioned(
-                    top: 0,
-                    right: 0,
-                    child: Container(
-                      constraints: const BoxConstraints(minWidth: 26),
-                      height: 26,
-                      padding: const EdgeInsets.symmetric(horizontal: 6),
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                          color: HColors.ink,
-                          borderRadius: BorderRadius.circular(13)),
-                      child: Text('$qty',
-                          style: theme.textTheme.labelLarge?.copyWith(
-                              color: Colors.white, fontFeatures: tabular)),
-                    ),
-                  ),
               ],
             ),
           ),

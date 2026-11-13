@@ -7,8 +7,11 @@ import '../../models/sale.dart';
 import '../../providers/sales_provider.dart';
 
 class TodayOrdersScreen extends ConsumerWidget {
-  const TodayOrdersScreen(
-      {super.key, required this.cafeId, required this.shopId});
+  const TodayOrdersScreen({
+    super.key,
+    required this.cafeId,
+    required this.shopId,
+  });
   final String cafeId;
   final String shopId;
 
@@ -18,25 +21,30 @@ class TodayOrdersScreen extends ConsumerWidget {
       builder: (ctx) => AlertDialog(
         title: const Text('Remove this order?'),
         content: Text(
-            '${o.waiterName}, ${formatMoney(o.total)}. It will no longer count in today\'s sales or reports.'),
+          '${o.waiterName}, ${formatMoney(o.total)}. It will no longer count in today\'s sales or reports.',
+        ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Keep order')),
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Keep order'),
+          ),
           FilledButton(
-              style: FilledButton.styleFrom(
-                  backgroundColor: HColors.khataRed,
-                  minimumSize: const Size(0, 44)),
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Remove order')),
+            style: FilledButton.styleFrom(
+              backgroundColor: context.h.khataRed,
+              minimumSize: const Size(0, 44),
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Remove order'),
+          ),
         ],
       ),
     );
     if (ok == true) {
       await ref.read(salesServiceProvider).deleteOrder(cafeId, o);
       if (context.mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('Order removed')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Order removed')));
       }
     }
   }
@@ -44,17 +52,20 @@ class TodayOrdersScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final sales =
-        ref.watch(todaySalesProvider((cafeId: cafeId, shopId: shopId)));
+    final sales = ref.watch(
+      todaySalesProvider((cafeId: cafeId, shopId: shopId)),
+    );
 
     return Scaffold(
       appBar: AppBar(title: const Text("Today's orders")),
       body: sales.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(
-            child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Text('Today\'s orders could not be loaded. $e'))),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text('Today\'s orders could not be loaded. $e'),
+          ),
+        ),
         data: (lines) {
           final orders = SaleOrder.group(lines);
           final total = lines.fold<num>(0, (s, l) => s + l.total);
@@ -62,22 +73,28 @@ class TodayOrdersScreen extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Container(
-                color: HColors.slip,
+                color: context.h.slip,
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Expanded(
                       child: Text(
-                          orders.length == 1
-                              ? '1 order so far'
-                              : '${orders.length} orders so far',
-                          style: theme.textTheme.bodyLarge
-                              ?.copyWith(color: HColors.pencil)),
+                        orders.length == 1
+                            ? '1 order so far'
+                            : '${orders.length} orders so far',
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          color: context.h.pencil,
+                        ),
+                      ),
                     ),
-                    Text(formatMoney(total),
-                        style: theme.textTheme.headlineMedium?.copyWith(
-                            color: HColors.ink, fontFeatures: tabular)),
+                    Text(
+                      formatMoney(total),
+                      style: theme.textTheme.headlineMedium?.copyWith(
+                        color: context.h.ink,
+                        fontFeatures: tabular,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -85,8 +102,11 @@ class TodayOrdersScreen extends ConsumerWidget {
               Expanded(
                 child: orders.isEmpty
                     ? const Center(
-                        child: Text('No orders yet today.',
-                            textAlign: TextAlign.center))
+                        child: Text(
+                          'No orders yet today.',
+                          textAlign: TextAlign.center,
+                        ),
+                      )
                     : ListView.separated(
                         itemCount: orders.length,
                         separatorBuilder: (_, _) => const Divider(),
@@ -102,30 +122,42 @@ class TodayOrdersScreen extends ConsumerWidget {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      Row(children: [
-                                        Text(o.waiterName,
-                                            style: theme.textTheme.titleSmall),
-                                        const SizedBox(width: 8),
-                                        Text(formatTime(o.createdAt),
+                                      Row(
+                                        children: [
+                                          Text(
+                                            o.waiterName,
+                                            style: theme.textTheme.titleSmall,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            formatTime(o.createdAt),
                                             style: theme.textTheme.bodySmall
                                                 ?.copyWith(
-                                                    color: HColors.pencil,
-                                                    fontFeatures: tabular)),
-                                      ]),
+                                                  color: context.h.pencil,
+                                                  fontFeatures: tabular,
+                                                ),
+                                          ),
+                                        ],
+                                      ),
                                       const SizedBox(height: 4),
                                       for (final l in o.lines)
-                                        Text('${l.qty} x ${l.itemName}',
-                                            style: theme.textTheme.bodyMedium),
+                                        Text(
+                                          '${l.qty} x ${l.itemName}',
+                                          style: theme.textTheme.bodyMedium,
+                                        ),
                                     ],
                                   ),
                                 ),
-                                Text(formatMoney(o.total),
-                                    style: theme.textTheme.titleMedium
-                                        ?.copyWith(fontFeatures: tabular)),
+                                Text(
+                                  formatMoney(o.total),
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    fontFeatures: tabular,
+                                  ),
+                                ),
                                 IconButton(
                                   tooltip: 'Remove order',
                                   icon: const Icon(Icons.delete_outline),
-                                  color: HColors.pencil,
+                                  color: context.h.pencil,
                                   onPressed: () => _remove(context, ref, o),
                                 ),
                               ],

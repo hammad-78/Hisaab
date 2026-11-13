@@ -88,8 +88,9 @@ class _ReportsTabState extends ConsumerState<ReportsTab> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Export failed: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Export failed: $e')));
       }
     } finally {
       if (mounted) setState(() => _exporting = false);
@@ -102,8 +103,9 @@ class _ReportsTabState extends ConsumerState<ReportsTab> {
         ref.watch(shopsProvider(widget.cafeId)).valueOrNull ?? const <Shop>[];
     final shopNames = {for (final s in shops) s.id: s.name};
     final fromKey = dayKey(_from), toKey = dayKey(_to);
-    final sales = ref.watch(rangeSalesProvider(
-        (cafeId: widget.cafeId, from: fromKey, to: toKey)));
+    final sales = ref.watch(
+      rangeSalesProvider((cafeId: widget.cafeId, from: fromKey, to: toKey)),
+    );
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
@@ -114,9 +116,11 @@ class _ReportsTabState extends ConsumerState<ReportsTab> {
           children: [
             for (final p in _Preset.values)
               ChoiceChip(
-                label: Text(p == _Preset.custom && _preset == _Preset.custom
-                    ? (fromKey == toKey ? fromKey : '$fromKey → $toKey')
-                    : _presetLabels[p]!),
+                label: Text(
+                  p == _Preset.custom && _preset == _Preset.custom
+                      ? (fromKey == toKey ? fromKey : '$fromKey → $toKey')
+                      : _presetLabels[p]!,
+                ),
                 selected: _preset == p,
                 onSelected: (_) => p == _Preset.custom
                     ? _pickCustom()
@@ -127,8 +131,7 @@ class _ReportsTabState extends ConsumerState<ReportsTab> {
         const SizedBox(height: 12),
         DropdownButtonFormField<String?>(
           initialValue: _shopId,
-          decoration: const InputDecoration(
-              labelText: 'Shop', isDense: true),
+          decoration: const InputDecoration(labelText: 'Shop', isDense: true),
           items: [
             const DropdownMenuItem(value: null, child: Text('All shops')),
             for (final s in shops)
@@ -139,8 +142,9 @@ class _ReportsTabState extends ConsumerState<ReportsTab> {
         const SizedBox(height: 16),
         sales.when(
           loading: () => const Padding(
-              padding: EdgeInsets.all(32),
-              child: Center(child: CircularProgressIndicator())),
+            padding: EdgeInsets.all(32),
+            child: Center(child: CircularProgressIndicator()),
+          ),
           error: (e, _) => Text('Could not load report: $e'),
           data: (all) {
             final filtered = _shopId == null
@@ -187,7 +191,7 @@ class _ReportView extends StatelessWidget {
     final theme = Theme.of(context);
 
     final num_ = theme.textTheme.bodyLarge?.copyWith(fontFeatures: tabular);
-    final head = theme.textTheme.labelMedium?.copyWith(color: HColors.pencil);
+    final head = theme.textTheme.labelMedium?.copyWith(color: context.h.pencil);
 
     // A ruled ledger table: name on the left, figures right-aligned in columns.
     Widget section(String title, String countLabel, List<ReportLine> lines) =>
@@ -199,39 +203,70 @@ class _ReportView extends StatelessWidget {
             const SizedBox(height: 8),
             Padding(
               padding: const EdgeInsets.only(bottom: 6),
-              child: Row(children: [
-                const Spacer(),
-                SizedBox(width: 64, child: Text(countLabel, textAlign: TextAlign.right, style: head)),
-                SizedBox(width: 110, child: Text('Amount', textAlign: TextAlign.right, style: head)),
-              ]),
-            ),
-            const Divider(color: HColors.graphite),
-            for (final l in lines)
-              Container(
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                decoration: const BoxDecoration(
-                    border: Border(bottom: BorderSide(color: HColors.rule))),
-                child: Row(children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(l.name, style: theme.textTheme.bodyLarge),
-                        if (l.sub != null)
-                          Text(l.sub!,
-                              style: theme.textTheme.bodySmall
-                                  ?.copyWith(color: HColors.pencil)),
-                      ],
+              child: Row(
+                children: [
+                  const Spacer(),
+                  SizedBox(
+                    width: 64,
+                    child: Text(
+                      countLabel,
+                      textAlign: TextAlign.right,
+                      style: head,
                     ),
                   ),
                   SizedBox(
+                    width: 110,
+                    child: Text(
+                      'Amount',
+                      textAlign: TextAlign.right,
+                      style: head,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Divider(color: context.h.graphite),
+            for (final l in lines)
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  border: Border(bottom: BorderSide(color: context.h.rule)),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(l.name, style: theme.textTheme.bodyLarge),
+                          if (l.sub != null)
+                            Text(
+                              l.sub!,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: context.h.pencil,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(
                       width: 64,
-                      child: Text('${l.count}', textAlign: TextAlign.right, style: num_)),
-                  SizedBox(
+                      child: Text(
+                        '${l.count}',
+                        textAlign: TextAlign.right,
+                        style: num_,
+                      ),
+                    ),
+                    SizedBox(
                       width: 110,
-                      child: Text(formatMoney(l.amount),
-                          textAlign: TextAlign.right, style: num_)),
-                ]),
+                      child: Text(
+                        formatMoney(l.amount),
+                        textAlign: TextAlign.right,
+                        style: num_,
+                      ),
+                    ),
+                  ],
+                ),
               ),
           ],
         );
@@ -240,25 +275,37 @@ class _ReportView extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         // The total, ruled off like the bottom of a ledger page.
-        Text('Total sales', style: theme.textTheme.bodyLarge?.copyWith(color: HColors.pencil)),
+        Text(
+          'Total sales',
+          style: theme.textTheme.bodyLarge?.copyWith(color: context.h.pencil),
+        ),
         const SizedBox(height: 2),
         Align(
           alignment: Alignment.centerLeft,
           child: Container(
             padding: const EdgeInsets.only(bottom: 3),
-            decoration: const BoxDecoration(
-                border: Border(bottom: BorderSide(color: HColors.ink, width: 1.5))),
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(color: context.h.ink, width: 1.5),
+              ),
+            ),
             child: Container(
               padding: const EdgeInsets.only(bottom: 2),
-              decoration: const BoxDecoration(
-                  border: Border(bottom: BorderSide(color: HColors.ink, width: 1.5))),
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(color: context.h.ink, width: 1.5),
+                ),
+              ),
               child: FittedBox(
                 fit: BoxFit.scaleDown,
-                child: Text(formatMoney(r.total),
-                    style: theme.textTheme.displaySmall?.copyWith(
-                        color: HColors.ink,
-                        fontWeight: FontWeight.w800,
-                        fontFeatures: tabular)),
+                child: Text(
+                  formatMoney(r.total),
+                  style: theme.textTheme.displaySmall?.copyWith(
+                    color: context.h.ink,
+                    fontWeight: FontWeight.w800,
+                    fontFeatures: tabular,
+                  ),
+                ),
               ),
             ),
           ),
@@ -282,8 +329,9 @@ class _ReportView extends StatelessWidget {
             const SizedBox(width: 8),
             Expanded(
               child: OutlinedButton.icon(
-                onPressed:
-                    exporting || r.isEmpty ? null : () => onExport(false),
+                onPressed: exporting || r.isEmpty
+                    ? null
+                    : () => onExport(false),
                 icon: const Icon(Icons.grid_on),
                 label: const Text('Share Excel'),
               ),
@@ -294,9 +342,11 @@ class _ReportView extends StatelessWidget {
           const Padding(
             padding: EdgeInsets.all(32),
             child: Center(
-                child: Text(
-                    'No sales in this period. Pick another date range or shop.',
-                    textAlign: TextAlign.center)),
+              child: Text(
+                'No sales in this period. Pick another date range or shop.',
+                textAlign: TextAlign.center,
+              ),
+            ),
           )
         else ...[
           if (showShops) section('By shop', 'Orders', r.byShop),

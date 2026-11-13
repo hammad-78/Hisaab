@@ -13,7 +13,10 @@ class CafeService {
 
   /// Creates the owner's cafe and links it to their profile.
   /// Two sequential writes: the profile rule checks the cafe already exists.
-  Future<void> createCafe({required String ownerUid, required String name}) async {
+  Future<void> createCafe({
+    required String ownerUid,
+    required String name,
+  }) async {
     final ref = _db.collection('cafes').doc();
     await ref.set({
       'name': name.trim(),
@@ -33,13 +36,17 @@ class CafeService {
       _db.collection('cafes').doc(cafeId).collection(name);
 
   // ---- menu items (shared by every shop in the cafe) ----
-  Stream<List<Item>> items(String cafeId) => _col(cafeId, 'items')
-      .orderBy('name')
-      .snapshots()
-      .map((q) => q.docs.map(Item.fromDoc).toList());
+  Stream<List<Item>> items(String cafeId) => _col(
+    cafeId,
+    'items',
+  ).orderBy('name').snapshots().map((q) => q.docs.map(Item.fromDoc).toList());
 
-  Future<void> saveItem(String cafeId,
-      {String? id, required String name, required num price}) {
+  Future<void> saveItem(
+    String cafeId, {
+    String? id,
+    required String name,
+    required num price,
+  }) {
     final data = {'name': name.trim(), 'price': price};
     final col = _col(cafeId, 'items');
     return id == null
@@ -51,13 +58,17 @@ class CafeService {
       _col(cafeId, 'items').doc(id).delete();
 
   // ---- waiters (each belongs to one shop) ----
-  Stream<List<Waiter>> waiters(String cafeId) => _col(cafeId, 'waiters')
-      .orderBy('name')
-      .snapshots()
-      .map((q) => q.docs.map(Waiter.fromDoc).toList());
+  Stream<List<Waiter>> waiters(String cafeId) => _col(
+    cafeId,
+    'waiters',
+  ).orderBy('name').snapshots().map((q) => q.docs.map(Waiter.fromDoc).toList());
 
-  Future<void> saveWaiter(String cafeId,
-      {String? id, required String name, required String shopId}) {
+  Future<void> saveWaiter(
+    String cafeId, {
+    String? id,
+    required String name,
+    required String shopId,
+  }) {
     final data = {'name': name.trim(), 'shopId': shopId};
     final col = _col(cafeId, 'waiters');
     return id == null
@@ -102,8 +113,11 @@ class CafeService {
       final managerUid = cred.user!.uid;
 
       try {
-        final shopRef =
-            _db.collection('cafes').doc(cafeId).collection('shops').doc();
+        final shopRef = _db
+            .collection('cafes')
+            .doc(cafeId)
+            .collection('shops')
+            .doc();
         final batch = _db.batch();
         batch.set(shopRef, {
           'name': shopName.trim(),

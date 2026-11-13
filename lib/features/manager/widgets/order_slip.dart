@@ -39,21 +39,25 @@ class OrderSlip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final h = theme.h;
     final total = lines.fold<num>(0, (s, l) => s + l.amount);
-    final count = lines.fold<int>(0, (s, l) => s + l.qty);
 
     return PhysicalShape(
       clipper: const _TornTop(),
-      color: HColors.slip,
+      color: h.slip,
       elevation: 3,
-      shadowColor: const Color(0x331C2230),
+      shadowColor: Colors.black.withValues(alpha: 0.25),
       child: SafeArea(
         top: false,
         child: lines.isEmpty
             ? _ruled(
+                h,
                 Padding(
-                  padding: const EdgeInsets.only(top: 14),
-                  child: _empty(theme),
+                  padding: const EdgeInsets.fromLTRB(_margin + 14, 20, 16, 18),
+                  child: Text(
+                    'Tap menu items to start an order.',
+                    style: theme.textTheme.bodyLarge?.copyWith(color: h.pencil),
+                  ),
                 ),
               )
             : Column(
@@ -62,13 +66,14 @@ class OrderSlip extends StatelessWidget {
                 children: [
                   // The written part of the slip, ruled by the red margin.
                   _ruled(
+                    h,
                     Padding(
                       padding: const EdgeInsets.only(top: 14),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          _header(theme, count),
+                          _header(theme),
                           ConstrainedBox(
                             constraints: BoxConstraints(
                               maxHeight:
@@ -78,7 +83,8 @@ class OrderSlip extends StatelessWidget {
                               shrinkWrap: true,
                               padding: EdgeInsets.zero,
                               children: [
-                                for (final l in lines) _line(theme, l),
+                                for (final l in lines)
+                                  _line(theme, l, key: ValueKey(l.item.id)),
                               ],
                             ),
                           ),
@@ -94,12 +100,12 @@ class OrderSlip extends StatelessWidget {
                           ? null
                           : () => onPlace!(total),
                       icon: busy
-                          ? const SizedBox(
+                          ? SizedBox(
                               width: 18,
                               height: 18,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                color: Colors.white,
+                                color: h.onInk,
                               ),
                             )
                           : const Icon(Icons.check),
@@ -117,44 +123,45 @@ class OrderSlip extends StatelessWidget {
   }
 
   /// Draws the red ledger margin down the left of [child] only.
-  Widget _ruled(Widget child) => Stack(
+  Widget _ruled(HTokens h, Widget child) => Stack(
     children: [
-      const Positioned(
+      Positioned(
         left: _margin,
         top: 0,
         bottom: 0,
-        child: SizedBox(width: 1.5, child: ColoredBox(color: HColors.khataRed)),
+        child: ExcludeSemantics(
+          child: SizedBox(width: 1.5, child: ColoredBox(color: h.khataRed)),
+        ),
       ),
       child,
     ],
   );
 
-  Widget _empty(ThemeData theme) => Padding(
-    padding: const EdgeInsets.fromLTRB(_margin + 14, 6, 16, 18),
-    child: Text(
-      'Tap menu items to start an order.',
-      style: theme.textTheme.bodyLarge?.copyWith(color: HColors.pencil),
-    ),
-  );
-
-  Widget _header(ThemeData theme, int count) => Padding(
+  Widget _header(ThemeData theme) => Padding(
     padding: const EdgeInsets.fromLTRB(0, 0, 8, 4),
     child: Row(
       children: [
         SizedBox(
           width: _margin,
-          child: Text(
-            'Qty',
-            textAlign: TextAlign.center,
-            style: theme.textTheme.labelMedium?.copyWith(color: HColors.pencil),
+          child: ExcludeSemantics(
+            child: Text(
+              'Qty',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: theme.h.pencil,
+              ),
+            ),
           ),
         ),
         const SizedBox(width: 14),
         Expanded(
-          child: Text(
-            waiterName == null ? 'New order' : 'Order for $waiterName',
-            style: theme.textTheme.titleMedium,
-            overflow: TextOverflow.ellipsis,
+          child: Semantics(
+            header: true,
+            child: Text(
+              waiterName == null ? 'New order' : 'Order for $waiterName',
+              style: theme.textTheme.titleMedium,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ),
         TextButton(
@@ -165,98 +172,122 @@ class OrderSlip extends StatelessWidget {
     ),
   );
 
-  Widget _line(ThemeData theme, SlipLine l) => Container(
-    height: 48,
-    decoration: const BoxDecoration(
-      border: Border(bottom: BorderSide(color: HColors.rule)),
-    ),
-    child: Row(
-      children: [
-        SizedBox(
-          width: _margin,
-          child: Text(
-            '${l.qty}',
-            textAlign: TextAlign.center,
-            style: theme.textTheme.titleMedium?.copyWith(
-              color: HColors.ink,
-              fontFeatures: tabular,
-            ),
-          ),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Text(
-            l.item.name,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodyLarge,
-          ),
-        ),
-        _step(
-          Icons.remove,
-          'One less ${l.item.name}',
-          () => onChange(l.item.id, -1),
-        ),
-        _step(
-          Icons.add,
-          'One more ${l.item.name}',
-          () => onChange(l.item.id, 1),
-        ),
-        SizedBox(
-          width: 92,
-          child: Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: Text(
-              formatMoney(l.amount),
-              textAlign: TextAlign.right,
-              style: theme.textTheme.bodyLarge?.copyWith(fontFeatures: tabular),
-            ),
-          ),
-        ),
-      ],
-    ),
-  );
-
-  Widget _step(IconData icon, String tip, VoidCallback onTap) => IconButton(
-    tooltip: tip,
-    onPressed: busy ? null : onTap,
-    icon: Icon(icon, size: 20),
-    visualDensity: VisualDensity.compact,
-    color: HColors.pencil,
-  );
-
-  Widget _total(ThemeData theme, num total) => Padding(
-    padding: const EdgeInsets.fromLTRB(_margin + 14, 10, 16, 10),
-    child: Row(
-      children: [
-        Text('Total', style: theme.textTheme.titleMedium),
-        const Spacer(),
-        // Ruled off like a ledger total: double line underneath.
-        Container(
-          padding: const EdgeInsets.only(bottom: 3),
-          decoration: const BoxDecoration(
-            border: Border(
-              bottom: BorderSide(color: HColors.graphite, width: 1),
-            ),
-          ),
-          child: Container(
-            padding: const EdgeInsets.only(bottom: 2),
-            decoration: const BoxDecoration(
-              border: Border(
-                bottom: BorderSide(color: HColors.graphite, width: 1),
-              ),
-            ),
-            child: Text(
-              formatMoney(total),
-              style: theme.textTheme.headlineMedium?.copyWith(
-                color: HColors.ink,
-                fontFeatures: tabular,
+  /// One row. Min height (not fixed) so large system text never clips.
+  Widget _line(ThemeData theme, SlipLine l, {Key? key}) {
+    final h = theme.h;
+    return Container(
+      key: key,
+      constraints: const BoxConstraints(minHeight: 56),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: h.rule)),
+      ),
+      child: Row(
+        children: [
+          // Read the row as one phrase: "3 Doodh patti chai, Rs 240".
+          Expanded(
+            child: MergeSemantics(
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: _margin,
+                    child: Text(
+                      '${l.qty}',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: h.ink,
+                        fontFeatures: tabular,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Text(l.item.name, style: theme.textTheme.bodyLarge),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Text(
+                      formatMoney(l.amount),
+                      textAlign: TextAlign.right,
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        fontFeatures: tabular,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
+          _step(
+            h,
+            Icons.remove,
+            'One less ${l.item.name}',
+            () => onChange(l.item.id, -1),
+          ),
+          _step(
+            h,
+            Icons.add,
+            'One more ${l.item.name}',
+            () => onChange(l.item.id, 1),
+          ),
+          const SizedBox(width: 4),
+        ],
+      ),
+    );
+  }
+
+  /// Full-size (48dp) steppers: these are hit fast, one-handed, at a counter.
+  Widget _step(HTokens h, IconData icon, String tip, VoidCallback onTap) =>
+      IconButton(
+        tooltip: tip,
+        onPressed: busy ? null : onTap,
+        icon: Icon(icon, size: 22),
+        color: h.pencil,
+      );
+
+  Widget _total(ThemeData theme, num total) {
+    final h = theme.h;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(_margin + 14, 10, 16, 10),
+      child: MergeSemantics(
+        child: Row(
+          children: [
+            Text('Total', style: theme.textTheme.titleMedium),
+            const SizedBox(width: 12),
+            // Ruled off like a ledger total: double line underneath.
+            // Right-aligned, and shrinks rather than overflowing at large text.
+            Expanded(
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: Container(
+                  padding: const EdgeInsets.only(bottom: 3),
+                  decoration: BoxDecoration(
+                    border: Border(bottom: BorderSide(color: h.graphite)),
+                  ),
+                  child: Container(
+                    padding: const EdgeInsets.only(bottom: 2),
+                    decoration: BoxDecoration(
+                      border: Border(bottom: BorderSide(color: h.graphite)),
+                    ),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerRight,
+                      child: Text(
+                        formatMoney(total),
+                        style: theme.textTheme.headlineMedium?.copyWith(
+                          color: h.ink,
+                          fontFeatures: tabular,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
-      ],
-    ),
-  );
+      ),
+    );
+  }
 }
 
 /// A slip torn off a pad: small zigzag teeth along the top edge.

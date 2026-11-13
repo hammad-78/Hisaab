@@ -6,12 +6,16 @@ import '../../core/theme.dart';
 import '../../models/item.dart';
 import '../../providers/cafe_provider.dart';
 
-
-Future<void> showItemDialog(BuildContext context, WidgetRef ref, String cafeId,
-    {Item? existing}) {
+Future<void> showItemDialog(
+  BuildContext context,
+  WidgetRef ref,
+  String cafeId, {
+  Item? existing,
+}) {
   final name = TextEditingController(text: existing?.name);
-  final price =
-      TextEditingController(text: existing == null ? '' : formatPrice(existing.price));
+  final price = TextEditingController(
+    text: existing == null ? '' : formatPrice(existing.price),
+  );
   final formKey = GlobalKey<FormState>();
 
   return showDialog(
@@ -33,7 +37,9 @@ Future<void> showItemDialog(BuildContext context, WidgetRef ref, String cafeId,
             ),
             TextFormField(
               controller: price,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               decoration: const InputDecoration(labelText: 'Price'),
               validator: (v) {
                 final n = num.tryParse((v ?? '').trim());
@@ -45,14 +51,20 @@ Future<void> showItemDialog(BuildContext context, WidgetRef ref, String cafeId,
       ),
       actions: [
         TextButton(
-            onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          onPressed: () => Navigator.pop(ctx),
+          child: const Text('Cancel'),
+        ),
         FilledButton(
           onPressed: () async {
             if (!formKey.currentState!.validate()) return;
-            await ref.read(cafeServiceProvider).saveItem(cafeId,
-                id: existing?.id,
-                name: name.text,
-                price: num.parse(price.text.trim()));
+            await ref
+                .read(cafeServiceProvider)
+                .saveItem(
+                  cafeId,
+                  id: existing?.id,
+                  name: name.text,
+                  price: num.parse(price.text.trim()),
+                );
             if (ctx.mounted) Navigator.pop(ctx);
           },
           child: const Text('Save'),
@@ -70,11 +82,13 @@ Future<bool> confirmDelete(BuildContext context, String what) async {
       content: const Text('Past sales are not affected.'),
       actions: [
         TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel')),
+          onPressed: () => Navigator.pop(ctx, false),
+          child: const Text('Cancel'),
+        ),
         FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete')),
+          onPressed: () => Navigator.pop(ctx, true),
+          child: const Text('Delete'),
+        ),
       ],
     ),
   );
@@ -94,8 +108,11 @@ class MenuTab extends ConsumerWidget {
       data: (list) {
         if (list.isEmpty) {
           return const Center(
-              child: Text('No items yet.\nTap "Add item" to build your menu.',
-                  textAlign: TextAlign.center));
+            child: Text(
+              'No items yet.\nTap "Add item" to build your menu.',
+              textAlign: TextAlign.center,
+            ),
+          );
         }
         return ListView.separated(
           padding: const EdgeInsets.only(bottom: 88),
@@ -104,10 +121,13 @@ class MenuTab extends ConsumerWidget {
           itemBuilder: (_, i) {
             final it = list[i];
             return ListTile(
+              key: ValueKey(it.id),
               leading: const Icon(Icons.coffee),
               title: Text(it.name),
-              subtitle: Text(formatMoney(it.price),
-                  style: const TextStyle(fontFeatures: tabular)),
+              subtitle: Text(
+                formatMoney(it.price),
+                style: const TextStyle(fontFeatures: tabular),
+              ),
               onTap: () => showItemDialog(context, ref, cafeId, existing: it),
               trailing: IconButton(
                 icon: const Icon(Icons.delete_outline),

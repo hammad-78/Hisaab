@@ -47,7 +47,8 @@ class Sale {
   final num unitPrice;
   final num total;
   final String day;
-  final DateTime? createdAt; // null briefly while the server timestamp is pending
+  final DateTime?
+  createdAt; // null briefly while the server timestamp is pending
 
   const Sale({
     required this.id,

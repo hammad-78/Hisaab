@@ -8,7 +8,8 @@ import '../models/waiter.dart';
 typedef OrderLine = ({Item item, int qty});
 
 class SalesService {
-  SalesService({FirebaseFirestore? db}) : _db = db ?? FirebaseFirestore.instance;
+  SalesService({FirebaseFirestore? db})
+    : _db = db ?? FirebaseFirestore.instance;
 
   final FirebaseFirestore _db;
 
@@ -56,22 +57,28 @@ class SalesService {
           .where('day', isEqualTo: day)
           .snapshots()
           .map((q) {
-        final list = q.docs.map(Sale.fromDoc).toList();
-        // A line still waiting for its server timestamp is the newest.
-        list.sort((a, b) => (b.createdAt ?? DateTime.now())
-            .compareTo(a.createdAt ?? DateTime.now()));
-        return list;
-      });
+            final list = q.docs.map(Sale.fromDoc).toList();
+            // A line still waiting for its server timestamp is the newest.
+            list.sort(
+              (a, b) => (b.createdAt ?? DateTime.now()).compareTo(
+                a.createdAt ?? DateTime.now(),
+              ),
+            );
+            return list;
+          });
 
   /// All sale lines in the cafe between two day keys (inclusive).
   /// A range on a single field needs no composite index; shop filtering is
   /// done in the app so the owner never has to create one either.
-  Stream<List<Sale>> salesInRange(String cafeId, String fromDay, String toDay) =>
-      _sales(cafeId)
-          .where('day', isGreaterThanOrEqualTo: fromDay)
-          .where('day', isLessThanOrEqualTo: toDay)
-          .snapshots()
-          .map((q) => q.docs.map(Sale.fromDoc).toList());
+  Stream<List<Sale>> salesInRange(
+    String cafeId,
+    String fromDay,
+    String toDay,
+  ) => _sales(cafeId)
+      .where('day', isGreaterThanOrEqualTo: fromDay)
+      .where('day', isLessThanOrEqualTo: toDay)
+      .snapshots()
+      .map((q) => q.docs.map(Sale.fromDoc).toList());
 
   /// Removes a whole order (all of its lines) at once.
   Future<void> deleteOrder(String cafeId, SaleOrder order) {

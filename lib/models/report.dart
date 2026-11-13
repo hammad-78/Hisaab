@@ -8,8 +8,12 @@ class ReportLine {
   final int count;
   final num amount;
 
-  const ReportLine(
-      {required this.name, this.sub, required this.count, required this.amount});
+  const ReportLine({
+    required this.name,
+    this.sub,
+    required this.count,
+    required this.amount,
+  });
 }
 
 class Report {
@@ -62,17 +66,22 @@ class Report {
 
       (shops[s.shopId] ??= _Acc(shopName(s.shopId))).add(s);
       (items[s.itemId] ??= _Acc(s.itemName)).add(s);
-      (waiters[s.waiterId] ??= _Acc(s.waiterName, sub: shopName(s.shopId)))
-          .add(s);
+      (waiters[s.waiterId] ??= _Acc(
+        s.waiterName,
+        sub: shopName(s.shopId),
+      )).add(s);
     }
 
     List<ReportLine> sorted(Map<String, _Acc> m, {bool qtyCount = false}) {
       final list = m.values
-          .map((a) => ReportLine(
+          .map(
+            (a) => ReportLine(
               name: a.name,
               sub: a.sub,
               count: qtyCount ? a.qty : a.orders.length,
-              amount: a.amount))
+              amount: a.amount,
+            ),
+          )
           .toList();
       list.sort((a, b) => b.amount.compareTo(a.amount));
       return list;

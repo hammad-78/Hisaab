@@ -7,7 +7,8 @@ import '../services/auth_service.dart';
 final authServiceProvider = Provider<AuthService>((ref) => AuthService());
 
 final authStateProvider = StreamProvider<User?>(
-    (ref) => ref.watch(authServiceProvider).authStateChanges());
+  (ref) => ref.watch(authServiceProvider).authStateChanges(),
+);
 
 /// Firestore profile (role etc.) of the signed-in user.
 final appUserProvider = StreamProvider<AppUser?>((ref) {

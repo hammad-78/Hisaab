@@ -26,8 +26,9 @@ class _OwnerHomeState extends ConsumerState<OwnerHome> {
   @override
   Widget build(BuildContext context) {
     final cafeId = widget.user.cafeId;
-    final cafeName =
-        cafeId == null ? null : ref.watch(cafeNameProvider(cafeId)).valueOrNull;
+    final cafeName = cafeId == null
+        ? null
+        : ref.watch(cafeNameProvider(cafeId)).valueOrNull;
     // Keep the shops stream alive on every tab (the waiter form needs it).
     if (cafeId != null) ref.watch(shopsProvider(cafeId));
 
@@ -58,12 +59,18 @@ class _OwnerHomeState extends ConsumerState<OwnerHome> {
               onDestinationSelected: (i) => setState(() => _tab = i),
               destinations: const [
                 NavigationDestination(
-                    icon: Icon(Icons.storefront), label: 'Shops'),
+                  icon: Icon(Icons.storefront),
+                  label: 'Shops',
+                ),
                 NavigationDestination(icon: Icon(Icons.coffee), label: 'Menu'),
                 NavigationDestination(
-                    icon: Icon(Icons.person), label: 'Waiters'),
+                  icon: Icon(Icons.person),
+                  label: 'Waiters',
+                ),
                 NavigationDestination(
-                    icon: Icon(Icons.bar_chart), label: 'Reports'),
+                  icon: Icon(Icons.bar_chart),
+                  label: 'Reports',
+                ),
               ],
             ),
     );
@@ -77,8 +84,9 @@ class _OwnerHomeState extends ConsumerState<OwnerHome> {
         return FloatingActionButton.extended(
           icon: const Icon(Icons.add_business),
           label: const Text('Add shop'),
-          onPressed: () => Navigator.of(context).push(MaterialPageRoute(
-              builder: (_) => AddShopScreen(cafeId: cafeId))),
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => AddShopScreen(cafeId: cafeId)),
+          ),
         );
       case 1:
         return FloatingActionButton.extended(
@@ -94,8 +102,11 @@ class _OwnerHomeState extends ConsumerState<OwnerHome> {
             final shops =
                 ref.read(shopsProvider(cafeId)).valueOrNull ?? const <Shop>[];
             if (shops.isEmpty) {
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                  content: Text('Create a shop first, then add waiters.')));
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Create a shop first, then add waiters.'),
+                ),
+              );
               return;
             }
             showWaiterDialog(context, ref, cafeId, shops);

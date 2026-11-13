@@ -5,8 +5,8 @@ import '../models/app_user.dart';
 
 class AuthService {
   AuthService({FirebaseAuth? auth, FirebaseFirestore? db})
-      : _auth = auth ?? FirebaseAuth.instance,
-        _db = db ?? FirebaseFirestore.instance;
+    : _auth = auth ?? FirebaseAuth.instance,
+      _db = db ?? FirebaseFirestore.instance;
 
   final FirebaseAuth _auth;
   final FirebaseFirestore _db;
@@ -14,10 +14,11 @@ class AuthService {
   Stream<User?> authStateChanges() => _auth.authStateChanges();
 
   /// Live profile of the signed-in user (null if the doc doesn't exist yet).
-  Stream<AppUser?> profile(String uid) =>
-      _db.collection('users').doc(uid).snapshots().map(
-            (s) => s.exists ? AppUser.fromMap(uid, s.data()!) : null,
-          );
+  Stream<AppUser?> profile(String uid) => _db
+      .collection('users')
+      .doc(uid)
+      .snapshots()
+      .map((s) => s.exists ? AppUser.fromMap(uid, s.data()!) : null);
 
   Future<void> signIn(String email, String password) =>
       _auth.signInWithEmailAndPassword(email: email.trim(), password: password);
@@ -29,7 +30,9 @@ class AuthService {
     required String password,
   }) async {
     final cred = await _auth.createUserWithEmailAndPassword(
-        email: email.trim(), password: password);
+      email: email.trim(),
+      password: password,
+    );
     final user = AppUser(
       uid: cred.user!.uid,
       name: name.trim(),

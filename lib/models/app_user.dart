@@ -18,19 +18,19 @@ class AppUser {
   });
 
   factory AppUser.fromMap(String uid, Map<String, dynamic> m) => AppUser(
-        uid: uid,
-        name: (m['name'] ?? '') as String,
-        email: (m['email'] ?? '') as String,
-        role: m['role'] == 'owner' ? UserRole.owner : UserRole.manager,
-        cafeId: m['cafeId'] as String?,
-        shopId: m['shopId'] as String?,
-      );
+    uid: uid,
+    name: (m['name'] ?? '') as String,
+    email: (m['email'] ?? '') as String,
+    role: m['role'] == 'owner' ? UserRole.owner : UserRole.manager,
+    cafeId: m['cafeId'] as String?,
+    shopId: m['shopId'] as String?,
+  );
 
   Map<String, dynamic> toMap() => {
-        'name': name,
-        'email': email,
-        'role': role.name,
-        'cafeId': cafeId,
-        'shopId': shopId,
-      };
+    'name': name,
+    'email': email,
+    'role': role.name,
+    'cafeId': cafeId,
+    'shopId': shopId,
+  };
 }

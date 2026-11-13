@@ -24,7 +24,10 @@ class HisaabApp extends StatelessWidget {
     return MaterialApp(
       title: 'Hisaab',
       debugShowCheckedModeBanner: false,
-      theme: buildTheme(),
+      // Always light, even when the phone is in dark mode.
+      // (A dark theme exists in core/theme.dart if it's wanted later.)
+      theme: buildTheme(Brightness.light),
+      themeMode: ThemeMode.light,
       home: const AuthGate(),
     );
   }
@@ -51,8 +54,9 @@ class AuthGate extends ConsumerWidget {
           data: (user) {
             if (user == null) {
               return const _Message(
-                  'Setting up your account…\nIf this stays, log out and try again.',
-                  showLogout: true);
+                'Setting up your account…\nIf this stays, log out and try again.',
+                showLogout: true,
+              );
             }
             return user.role == UserRole.owner
                 ? OwnerHome(user: user)

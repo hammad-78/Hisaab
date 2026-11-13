@@ -37,7 +37,9 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
       _error = null;
     });
     try {
-      await ref.read(cafeServiceProvider).createShopWithManager(
+      await ref
+          .read(cafeServiceProvider)
+          .createShopWithManager(
             cafeId: widget.cafeId,
             shopName: _shopName.text,
             managerName: _managerName.text,
@@ -46,12 +48,15 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
           );
       if (!mounted) return;
       Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Shop and manager created')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Shop and manager created')));
     } on FirebaseAuthException catch (e) {
-      setState(() => _error = e.code == 'email-already-in-use'
-          ? 'That email is already used by another account.'
-          : (e.message ?? 'Could not create manager.'));
+      setState(
+        () => _error = e.code == 'email-already-in-use'
+            ? 'That email is already used by another account.'
+            : (e.message ?? 'Could not create manager.'),
+      );
     } catch (e) {
       setState(() => _error = 'Could not create shop: $e');
     } finally {
@@ -59,8 +64,7 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
     }
   }
 
-  InputDecoration _dec(String label) =>
-      InputDecoration(labelText: label);
+  InputDecoration _dec(String label) => InputDecoration(labelText: label);
 
   @override
   Widget build(BuildContext context) {
@@ -77,12 +81,15 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
                 controller: _shopName,
                 textCapitalization: TextCapitalization.words,
                 decoration: _dec('Shop name'),
-                validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? 'Enter a shop name' : null,
+                validator: (v) => (v == null || v.trim().isEmpty)
+                    ? 'Enter a shop name'
+                    : null,
               ),
               const SizedBox(height: 24),
-              Text('Manager login',
-                  style: Theme.of(context).textTheme.titleMedium),
+              Text(
+                'Manager login',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _managerName,
@@ -97,21 +104,24 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
                 controller: _email,
                 keyboardType: TextInputType.emailAddress,
                 decoration: _dec('Manager email'),
-                validator: (v) =>
-                    (v == null || !v.contains('@')) ? 'Enter a valid email' : null,
+                validator: (v) => (v == null || !v.contains('@'))
+                    ? 'Enter a valid email'
+                    : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _password,
                 decoration: _dec('Password'),
-                validator: (v) =>
-                    (v == null || v.length < 6) ? 'At least 6 characters' : null,
+                validator: (v) => (v == null || v.length < 6)
+                    ? 'At least 6 characters'
+                    : null,
               ),
               if (_error != null) ...[
                 const SizedBox(height: 12),
-                Text(_error!,
-                    style:
-                        TextStyle(color: Theme.of(context).colorScheme.error)),
+                Text(
+                  _error!,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
               ],
               const SizedBox(height: 20),
               FilledButton(
@@ -120,7 +130,8 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
                     ? const SizedBox(
                         height: 20,
                         width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2))
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
                     : const Text('Create shop'),
               ),
             ],

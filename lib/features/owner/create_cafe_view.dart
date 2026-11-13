@@ -56,22 +56,24 @@ class _CreateCafeViewState extends ConsumerState<CreateCafeView> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text('Create your cafe',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.titleLarge),
+              Text(
+                'Create your cafe',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
               const SizedBox(height: 16),
               TextField(
                 controller: _name,
                 textCapitalization: TextCapitalization.words,
-                decoration: const InputDecoration(
-                    labelText: 'Cafe name'),
+                decoration: const InputDecoration(labelText: 'Cafe name'),
                 onSubmitted: (_) => _create(),
               ),
               if (_error != null) ...[
                 const SizedBox(height: 12),
-                Text(_error!,
-                    style:
-                        TextStyle(color: Theme.of(context).colorScheme.error)),
+                Text(
+                  _error!,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
               ],
               const SizedBox(height: 16),
               FilledButton(
@@ -80,7 +82,8 @@ class _CreateCafeViewState extends ConsumerState<CreateCafeView> {
                     ? const SizedBox(
                         height: 20,
                         width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2))
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
                     : const Text('Create cafe'),
               ),
             ],
