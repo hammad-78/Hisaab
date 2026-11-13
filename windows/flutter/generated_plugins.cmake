@@ -4,10 +4,12 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   cloud_firestore
+  file_saver
   firebase_app_check
   firebase_auth
   firebase_core
   flutter_secure_storage_windows
+  printing
   share_plus
   sqlite3_flutter_libs
   url_launcher_windows

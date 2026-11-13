@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/shop.dart';
 import '../../models/waiter.dart';
 import '../../providers/cafe_provider.dart';
+import 'list_heading.dart';
 import 'menu_tab.dart' show confirmDelete;
 
 Future<void> showWaiterDialog(
@@ -101,10 +102,19 @@ class WaitersTab extends ConsumerWidget {
         }
         return ListView.separated(
           padding: const EdgeInsets.only(bottom: 88),
-          itemCount: list.length,
+          itemCount: list.length + 1,
           separatorBuilder: (_, _) => const Divider(height: 1),
           itemBuilder: (_, i) {
-            final w = list[i];
+            // Heading: "Waiters" with a small count beside it.
+            if (i == 0) {
+              return ListHeading(
+                title: 'Waiters',
+                count: list.length,
+                one: 'waiter',
+                many: 'waiters',
+              );
+            }
+            final w = list[i - 1];
             return ListTile(
               key: ValueKey(w.id),
               leading: const Icon(Icons.person),

@@ -8,6 +8,12 @@ import '../../models/shop.dart';
 import '../../providers/cafe_provider.dart';
 import '../../providers/sales_provider.dart';
 import '../../services/report_export.dart';
+import 'report_viewer_screen.dart';
+
+// File-type colours people recognise: PDF red, Excel green.
+// Both pass 4.5:1 contrast on the white button background.
+const _pdfRed = Color(0xFFC62828);
+const _excelGreen = Color(0xFF1D6F42);
 
 enum _Preset { today, yesterday, last7, thisMonth, custom }
 
@@ -32,7 +38,6 @@ class _ReportsTabState extends ConsumerState<ReportsTab> {
   late DateTime _from;
   late DateTime _to;
   String? _shopId; // null = all shops
-  bool _exporting = false;
 
   @override
   void initState() {
@@ -76,25 +81,16 @@ class _ReportsTabState extends ConsumerState<ReportsTab> {
     });
   }
 
-  Future<void> _export(Report r, bool pdf) async {
-    setState(() => _exporting = true);
-    try {
-      final cafeName =
-          ref.read(cafeNameProvider(widget.cafeId)).valueOrNull ?? 'Cafe';
-      if (pdf) {
-        await ReportExport.sharePdf(r, cafeName: cafeName);
-      } else {
-        await ReportExport.shareExcel(r, cafeName: cafeName);
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Export failed: $e')));
-      }
-    } finally {
-      if (mounted) setState(() => _exporting = false);
-    }
+  /// Opens the report inside the app; Download/Share live on that screen.
+  void _view(Report r, ReportFormat format) {
+    final cafeName =
+        ref.read(cafeNameProvider(widget.cafeId)).valueOrNull ?? 'Cafe';
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) =>
+            ReportViewerScreen(report: r, format: format, cafeName: cafeName),
+      ),
+    );
   }
 
   @override
@@ -162,8 +158,7 @@ class _ReportsTabState extends ConsumerState<ReportsTab> {
             return _ReportView(
               report: report,
               showShops: _shopId == null,
-              exporting: _exporting,
-              onExport: (pdf) => _export(report, pdf),
+              onView: (format) => _view(report, format),
             );
           },
         ),
@@ -176,14 +171,12 @@ class _ReportView extends StatelessWidget {
   const _ReportView({
     required this.report,
     required this.showShops,
-    required this.exporting,
-    required this.onExport,
+    required this.onView,
   });
 
   final Report report;
   final bool showShops;
-  final bool exporting;
-  final void Function(bool pdf) onExport;
+  final void Function(ReportFormat format) onView;
 
   @override
   Widget build(BuildContext context) {
@@ -321,19 +314,19 @@ class _ReportView extends StatelessWidget {
           children: [
             Expanded(
               child: OutlinedButton.icon(
-                onPressed: exporting || r.isEmpty ? null : () => onExport(true),
+                style: OutlinedButton.styleFrom(foregroundColor: _pdfRed),
+                onPressed: r.isEmpty ? null : () => onView(ReportFormat.pdf),
                 icon: const Icon(Icons.picture_as_pdf),
-                label: const Text('Share PDF'),
+                label: const Text('View PDF'),
               ),
             ),
             const SizedBox(width: 8),
             Expanded(
               child: OutlinedButton.icon(
-                onPressed: exporting || r.isEmpty
-                    ? null
-                    : () => onExport(false),
+                style: OutlinedButton.styleFrom(foregroundColor: _excelGreen),
+                onPressed: r.isEmpty ? null : () => onView(ReportFormat.excel),
                 icon: const Icon(Icons.grid_on),
-                label: const Text('Share Excel'),
+                label: const Text('View Excel'),
               ),
             ),
           ],

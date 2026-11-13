@@ -1,6 +1,8 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:excel/excel.dart';
+import 'package:file_saver/file_saver.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -9,29 +11,54 @@ import 'package:share_plus/share_plus.dart';
 import '../core/format.dart';
 import '../models/report.dart';
 
-/// Builds PDF / Excel files from a [Report] and opens the share sheet
-/// (WhatsApp, Gmail, Drive, Files...).
+enum ReportFormat {
+  pdf('PDF', 'pdf', 'application/pdf', MimeType.pdf),
+  excel(
+    'Excel',
+    'xlsx',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    MimeType.microsoftExcel,
+  );
+
+  const ReportFormat(this.label, this.ext, this.mime, this.saverType);
+  final String label;
+  final String ext;
+  final String mime;
+  final MimeType saverType;
+}
+
+/// Builds PDF / Excel files from a [Report], saves them to the device, or
+/// opens the share sheet (WhatsApp, Gmail, Drive...).
 class ReportExport {
-  static String _period(Report r) =>
+  static String period(Report r) =>
       r.fromDay == r.toDay ? r.fromDay : '${r.fromDay} to ${r.toDay}';
 
-  static String _fileBase(Report r) =>
+  /// File name without extension, e.g. hisaab_report_2026-11-01_2026-11-13
+  static String fileBase(Report r) =>
       'hisaab_report_${r.fromDay}${r.fromDay == r.toDay ? '' : '_${r.toDay}'}';
 
-  // ---------------- PDF ----------------
-  static Future<void> sharePdf(Report r, {required String cafeName}) async =>
-      _share(
-        await buildPdf(r, cafeName: cafeName),
-        '${_fileBase(r)}.pdf',
-        'application/pdf',
+  static Future<Uint8List> build(
+    Report r,
+    ReportFormat f, {
+    required String cafeName,
+  }) async => Uint8List.fromList(
+    f == ReportFormat.pdf
+        ? await buildPdf(r, cafeName: cafeName)
+        : buildExcel(r, cafeName: cafeName),
+  );
+
+  /// Opens the system "Save to" picker so the user chooses where the file
+  /// goes (e.g. Downloads). Returns the saved location, or null if cancelled.
+  static Future<String?> download(Report r, ReportFormat f, Uint8List bytes) =>
+      FileSaver.instance.saveAs(
+        name: fileBase(r),
+        bytes: bytes,
+        fileExtension: f.ext,
+        mimeType: f.saverType,
       );
 
-  static Future<void> shareExcel(Report r, {required String cafeName}) =>
-      _share(
-        buildExcel(r, cafeName: cafeName),
-        '${_fileBase(r)}.xlsx',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      );
+  static Future<void> share(Report r, ReportFormat f, Uint8List bytes) =>
+      _share(bytes, '${fileBase(r)}.${f.ext}', f.mime);
 
   static Future<List<int>> buildPdf(Report r, {required String cafeName}) {
     final doc = pw.Document();
@@ -76,7 +103,7 @@ class ReportExport {
             cafeName,
             style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold),
           ),
-          pw.Text('Sales report  |  ${_period(r)}  |  ${r.shopLabel}'),
+          pw.Text('Sales report  |  ${period(r)}  |  ${r.shopLabel}'),
           pw.SizedBox(height: 12),
           pw.Row(
             children: [
@@ -147,7 +174,7 @@ class ReportExport {
 
     final summary = excel['Summary'];
     summary.appendRow([text('Cafe'), text(cafeName)]);
-    summary.appendRow([text('Period'), text(_period(r))]);
+    summary.appendRow([text('Period'), text(period(r))]);
     summary.appendRow([text('Shop'), text(r.shopLabel)]);
     summary.appendRow([text('Total sales'), num_(r.total)]);
     summary.appendRow([text('Orders'), IntCellValue(r.orders)]);

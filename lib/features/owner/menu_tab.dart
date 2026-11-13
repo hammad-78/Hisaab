@@ -5,6 +5,7 @@ import '../../core/format.dart';
 import '../../core/theme.dart';
 import '../../models/item.dart';
 import '../../providers/cafe_provider.dart';
+import 'list_heading.dart';
 
 Future<void> showItemDialog(
   BuildContext context,
@@ -116,10 +117,19 @@ class MenuTab extends ConsumerWidget {
         }
         return ListView.separated(
           padding: const EdgeInsets.only(bottom: 88),
-          itemCount: list.length,
+          itemCount: list.length + 1,
           separatorBuilder: (_, _) => const Divider(height: 1),
-          itemBuilder: (_, i) {
-            final it = list[i];
+          itemBuilder: (_, index) {
+            // Heading: "Menu" with a small item count beside it.
+            if (index == 0) {
+              return ListHeading(
+                title: 'Menu',
+                count: list.length,
+                one: 'item',
+                many: 'items',
+              );
+            }
+            final it = list[index - 1];
             return ListTile(
               key: ValueKey(it.id),
               leading: const Icon(Icons.coffee),
