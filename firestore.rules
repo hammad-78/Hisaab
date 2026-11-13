@@ -1,0 +1,127 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- helpers ----------
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function userDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isOwnerOfCafe(cafeId) {
+      return signedIn()
+        && get(/databases/$(database)/documents/cafes/$(cafeId)).data.ownerId == request.auth.uid;
+    }
+
+    // Any signed-in user who belongs to this cafe (a manager of one of its shops).
+    function isCafeManager(cafeId) {
+      return signedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && userDoc().role == 'manager'
+        && userDoc().cafeId == cafeId;
+    }
+
+    function isManagerOfShop(cafeId, shopId) {
+      return isCafeManager(cafeId) && userDoc().shopId == shopId;
+    }
+
+    // ---------- users ----------
+    match /users/{uid} {
+      // A user reads their own profile; an owner reads the managers of their cafe.
+      allow read: if signedIn()
+        && (request.auth.uid == uid
+          || (resource.data.role == 'manager'
+              && resource.data.cafeId != null
+              && isOwnerOfCafe(resource.data.cafeId)));
+
+      // Self-registration is for owners only (no cafe/shop attached yet).
+      allow create: if signedIn()
+        && ((request.auth.uid == uid
+              && request.resource.data.role == 'owner'
+              && request.resource.data.cafeId == null
+              && request.resource.data.shopId == null)
+            // An owner creates the profile of a manager for one of their shops.
+            // existsAfter: the shop may be created in the same batch.
+            || (request.resource.data.role == 'manager'
+                && request.resource.data.cafeId is string
+                && request.resource.data.shopId is string
+                && isOwnerOfCafe(request.resource.data.cafeId)
+                && existsAfter(/databases/$(database)/documents/cafes/$(request.resource.data.cafeId)/shops/$(request.resource.data.shopId))));
+
+      // An owner can attach their own profile to a cafe they own (cafeId only).
+      allow update: if signedIn()
+        && request.auth.uid == uid
+        && resource.data.role == 'owner'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['cafeId', 'name'])
+        && (request.resource.data.cafeId == null
+            || isOwnerOfCafe(request.resource.data.cafeId));
+
+      // An owner may edit managers of their cafe: they stay managers, stay in
+      // the same cafe, and can only be moved to a shop that exists there.
+      allow update: if signedIn()
+        && resource.data.role == 'manager'
+        && isOwnerOfCafe(resource.data.cafeId)
+        && request.resource.data.role == 'manager'
+        && request.resource.data.cafeId == resource.data.cafeId
+        && request.resource.data.shopId is string
+        && existsAfter(/databases/$(database)/documents/cafes/$(resource.data.cafeId)/shops/$(request.resource.data.shopId));
+
+      // An owner may remove managers of their cafe.
+      allow delete: if signedIn()
+        && resource.data.role == 'manager'
+        && isOwnerOfCafe(resource.data.cafeId);
+    }
+
+    // ---------- cafes ----------
+    match /cafes/{cafeId} {
+      allow read: if isOwnerOfCafe(cafeId) || isCafeManager(cafeId);
+      allow create: if signedIn()
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0;
+      // The owner can rename the cafe but never hand it to another account.
+      allow update: if isOwnerOfCafe(cafeId)
+        && request.resource.data.ownerId == resource.data.ownerId;
+      allow delete: if isOwnerOfCafe(cafeId);
+
+      // Shops: owner manages, managers can read.
+      match /shops/{shopId} {
+        allow read: if isOwnerOfCafe(cafeId) || isCafeManager(cafeId);
+        allow write: if isOwnerOfCafe(cafeId);
+      }
+
+      // Menu items: owner manages, managers can read.
+      match /items/{itemId} {
+        allow read: if isOwnerOfCafe(cafeId) || isCafeManager(cafeId);
+        allow write: if isOwnerOfCafe(cafeId);
+      }
+
+      // Waiters: owner manages, managers can read.
+      match /waiters/{waiterId} {
+        allow read: if isOwnerOfCafe(cafeId) || isCafeManager(cafeId);
+        allow write: if isOwnerOfCafe(cafeId);
+      }
+
+      // Sales: managers record and undo sales for their own shop only.
+      match /sales/{saleId} {
+        allow read: if isOwnerOfCafe(cafeId)
+          || isManagerOfShop(cafeId, resource.data.shopId);
+        allow create: if isManagerOfShop(cafeId, request.resource.data.shopId)
+          && request.resource.data.createdBy == request.auth.uid
+          && request.resource.data.qty is int
+          && request.resource.data.qty > 0;
+        allow delete: if isOwnerOfCafe(cafeId)
+          || isManagerOfShop(cafeId, resource.data.shopId);
+        allow update: if false;
+      }
+    }
+
+    // Everything else is denied.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
