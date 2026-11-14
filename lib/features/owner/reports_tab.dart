@@ -152,12 +152,11 @@ class _ReportsTabState extends ConsumerState<ReportsTab> {
                 ? all
                 : all.where((s) => s.shopId == _shopId).toList();
             final cancelled = SaleOrder.group(
-              filtered.where((s) => s.cancelled).toList()
-                ..sort(
-                  (a, b) => (b.createdAt ?? DateTime.now()).compareTo(
-                    a.createdAt ?? DateTime.now(),
-                  ),
+              filtered.where((s) => s.cancelled).toList()..sort(
+                (a, b) => (b.createdAt ?? DateTime.now()).compareTo(
+                  a.createdAt ?? DateTime.now(),
                 ),
+              ),
             );
             final report = Report.from(
               sales: filtered.where((s) => !s.cancelled).toList(),
@@ -328,6 +327,25 @@ class _ReportView extends StatelessWidget {
           '${context.plural(r.itemsSold, 'item', 'items')} ${context.tr('sold')}',
           style: theme.textTheme.bodyLarge,
         ),
+        const SizedBox(height: 12),
+        OutlinedButton.icon(
+          style: OutlinedButton.styleFrom(
+            foregroundColor: context.h.khataRed,
+            minimumSize: const Size.fromHeight(48),
+          ),
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => _CancelledOrdersScreen(
+                orders: cancelled,
+                shopNames: shopNames,
+              ),
+            ),
+          ),
+          icon: const Icon(Icons.cancel_outlined),
+          label: Text(
+            context.trf('Cancelled orders ({0})', [cancelled.length]),
+          ),
+        ),
         const SizedBox(height: 16),
         Row(
           children: [
@@ -350,7 +368,7 @@ class _ReportView extends StatelessWidget {
             ),
           ],
         ),
-        if (r.isEmpty && cancelled.isEmpty)
+        if (r.isEmpty)
           Padding(
             padding: const EdgeInsets.all(32),
             child: Center(
@@ -363,33 +381,43 @@ class _ReportView extends StatelessWidget {
             ),
           )
         else ...[
-          if (!r.isEmpty) ...[
-            if (showShops) section('By shop', 'Orders', r.byShop),
-            section('By item', 'Qty', r.byItem),
-            section('By waiter', 'Orders', r.byWaiter),
-          ],
-          if (cancelled.isNotEmpty) ...[
-            const SizedBox(height: 28),
-            Text(
-              context.trf('Cancelled orders ({0})', [cancelled.length]),
-              style: theme.textTheme.titleMedium,
-            ),
-            const SizedBox(height: 2),
-            Text(
-              context.tr('Not counted in the totals above.'),
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: context.h.pencil,
+          if (showShops) section('By shop', 'Orders', r.byShop),
+          section('By item', 'Qty', r.byItem),
+          section('By waiter', 'Orders', r.byWaiter),
+        ],
+      ],
+    );
+  }
+}
+
+class _CancelledOrdersScreen extends StatelessWidget {
+  const _CancelledOrdersScreen({required this.orders, required this.shopNames});
+  final List<SaleOrder> orders;
+  final Map<String, String> shopNames;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final num_ = theme.textTheme.bodyLarge?.copyWith(fontFeatures: tabular);
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(context.tr('Cancelled orders')),
+        actions: const [LanguageButton()],
+      ),
+      body: orders.isEmpty
+          ? Center(
+              child: Text(
+                context.tr('No cancelled orders in this period.'),
+                textAlign: TextAlign.center,
               ),
-            ),
-            const SizedBox(height: 8),
-            Divider(color: context.h.graphite),
-            for (final o in cancelled)
-              Container(
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                decoration: BoxDecoration(
-                  border: Border(bottom: BorderSide(color: context.h.rule)),
-                ),
-                child: Row(
+            )
+          : ListView.separated(
+              padding: const EdgeInsets.all(16),
+              itemCount: orders.length,
+              separatorBuilder: (_, _) => const Divider(),
+              itemBuilder: (_, i) {
+                final o = orders[i];
+                return Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
@@ -423,11 +451,9 @@ class _ReportView extends StatelessWidget {
                       ),
                     ),
                   ],
-                ),
-              ),
-          ],
-        ],
-      ],
+                );
+              },
+            ),
     );
   }
 }

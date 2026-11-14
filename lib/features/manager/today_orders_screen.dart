@@ -133,6 +133,24 @@ class TodayOrdersScreen extends ConsumerWidget {
     );
   }
 
+  Widget _list(
+    BuildContext context,
+    WidgetRef ref,
+    List<SaleOrder> orders, {
+    required bool cancelled,
+    required String empty,
+  }) {
+    if (orders.isEmpty) {
+      return Center(child: Text(empty, textAlign: TextAlign.center));
+    }
+    return ListView.separated(
+      itemCount: orders.length,
+      separatorBuilder: (_, _) => const Divider(),
+      itemBuilder: (_, i) =>
+          _row(context, ref, orders[i], cancelled: cancelled),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
@@ -160,72 +178,70 @@ class TodayOrdersScreen extends ConsumerWidget {
           final orders = all.where((o) => !o.cancelled).toList();
           final cancelled = all.where((o) => o.cancelled).toList();
           final total = orders.fold<num>(0, (s, o) => s + o.total);
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Container(
-                color: context.h.slip,
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        orders.length == 1
-                            ? context.tr('1 order so far')
-                            : context.trf('{0} orders so far', [orders.length]),
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          color: context.h.pencil,
+          return DefaultTabController(
+            length: 2,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Container(
+                  color: context.h.slip,
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          orders.length == 1
+                              ? context.tr('1 order so far')
+                              : context.trf('{0} orders so far', [
+                                  orders.length,
+                                ]),
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            color: context.h.pencil,
+                          ),
                         ),
                       ),
-                    ),
-                    Text(
-                      formatMoney(total),
-                      style: theme.textTheme.headlineMedium?.copyWith(
-                        color: context.h.ink,
-                        fontFeatures: tabular,
+                      Text(
+                        formatMoney(total),
+                        style: theme.textTheme.headlineMedium?.copyWith(
+                          color: context.h.ink,
+                          fontFeatures: tabular,
+                        ),
                       ),
+                    ],
+                  ),
+                ),
+                const Divider(),
+                TabBar(
+                  tabs: [
+                    Tab(text: context.trf('Orders ({0})', [orders.length])),
+                    Tab(
+                      text: context.trf('Cancelled ({0})', [cancelled.length]),
                     ),
                   ],
                 ),
-              ),
-              const Divider(),
-              Expanded(
-                child: all.isEmpty
-                    ? Center(
-                        child: Text(
-                          context.tr('No orders yet today.'),
-                          textAlign: TextAlign.center,
-                        ),
-                      )
-                    : ListView(
-                        children: [
-                          for (final o in orders) ...[
-                            _row(context, ref, o, cancelled: false),
-                            const Divider(),
-                          ],
-                          if (cancelled.isNotEmpty) ...[
-                            Padding(
-                              padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-                              child: Text(
-                                context.trf('Cancelled orders ({0})', [
-                                  cancelled.length,
-                                ]),
-                                style: theme.textTheme.titleSmall?.copyWith(
-                                  color: context.h.pencil,
-                                ),
-                              ),
-                            ),
-                            const Divider(),
-                            for (final o in cancelled) ...[
-                              _row(context, ref, o, cancelled: true),
-                              const Divider(),
-                            ],
-                          ],
-                        ],
+                Expanded(
+                  child: TabBarView(
+                    children: [
+                      _list(
+                        context,
+                        ref,
+                        orders,
+                        cancelled: false,
+                        empty: context.tr('No orders yet today.'),
                       ),
-              ),
-            ],
+                      _list(
+                        context,
+                        ref,
+                        cancelled,
+                        cancelled: true,
+                        empty: context.tr('No cancelled orders today.'),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           );
         },
       ),
