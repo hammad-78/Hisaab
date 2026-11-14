@@ -41,6 +41,7 @@ class ShopsTab extends ConsumerWidget {
     final sales = salesAsync.valueOrNull;
     final byShop = <String, _ShopToday>{};
     for (final Sale s in sales ?? const []) {
+      if (s.cancelled) continue;
       (byShop[s.shopId] ??= _ShopToday())
         ..amount += s.total
         ..orders.add(s.orderId);

@@ -5,6 +5,7 @@ import '../../core/format.dart';
 import '../../core/l10n.dart';
 import '../../core/theme.dart';
 import '../../models/report.dart';
+import '../../models/sale.dart';
 import '../../models/shop.dart';
 import '../../providers/cafe_provider.dart';
 import '../../providers/sales_provider.dart';
@@ -150,8 +151,16 @@ class _ReportsTabState extends ConsumerState<ReportsTab> {
             final filtered = _shopId == null
                 ? all
                 : all.where((s) => s.shopId == _shopId).toList();
+            final cancelled = SaleOrder.group(
+              filtered.where((s) => s.cancelled).toList()
+                ..sort(
+                  (a, b) => (b.createdAt ?? DateTime.now()).compareTo(
+                    a.createdAt ?? DateTime.now(),
+                  ),
+                ),
+            );
             final report = Report.from(
-              sales: filtered,
+              sales: filtered.where((s) => !s.cancelled).toList(),
               shopNames: shopNames,
               fromDay: fromKey,
               toDay: toKey,
@@ -162,6 +171,8 @@ class _ReportsTabState extends ConsumerState<ReportsTab> {
             return _ReportView(
               report: report,
               showShops: _shopId == null,
+              cancelled: cancelled,
+              shopNames: shopNames,
               onView: (format) => _view(report, format),
             );
           },
@@ -175,11 +186,15 @@ class _ReportView extends StatelessWidget {
   const _ReportView({
     required this.report,
     required this.showShops,
+    required this.cancelled,
+    required this.shopNames,
     required this.onView,
   });
 
   final Report report;
   final bool showShops;
+  final List<SaleOrder> cancelled;
+  final Map<String, String> shopNames;
   final void Function(ReportFormat format) onView;
 
   @override
@@ -335,7 +350,7 @@ class _ReportView extends StatelessWidget {
             ),
           ],
         ),
-        if (r.isEmpty)
+        if (r.isEmpty && cancelled.isEmpty)
           Padding(
             padding: const EdgeInsets.all(32),
             child: Center(
@@ -348,9 +363,69 @@ class _ReportView extends StatelessWidget {
             ),
           )
         else ...[
-          if (showShops) section('By shop', 'Orders', r.byShop),
-          section('By item', 'Qty', r.byItem),
-          section('By waiter', 'Orders', r.byWaiter),
+          if (!r.isEmpty) ...[
+            if (showShops) section('By shop', 'Orders', r.byShop),
+            section('By item', 'Qty', r.byItem),
+            section('By waiter', 'Orders', r.byWaiter),
+          ],
+          if (cancelled.isNotEmpty) ...[
+            const SizedBox(height: 28),
+            Text(
+              context.trf('Cancelled orders ({0})', [cancelled.length]),
+              style: theme.textTheme.titleMedium,
+            ),
+            const SizedBox(height: 2),
+            Text(
+              context.tr('Not counted in the totals above.'),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: context.h.pencil,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Divider(color: context.h.graphite),
+            for (final o in cancelled)
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  border: Border(bottom: BorderSide(color: context.h.rule)),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${o.waiterName} · ${shopNames[o.lines.first.shopId] ?? context.tr('Deleted shop')}',
+                            style: theme.textTheme.bodyLarge,
+                          ),
+                          Text(
+                            '${o.lines.first.day} ${formatTime(o.createdAt)}',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: context.h.pencil,
+                              fontFeatures: tabular,
+                            ),
+                          ),
+                          for (final l in o.lines)
+                            Text(
+                              '${l.qty} x ${l.itemName}',
+                              style: theme.textTheme.bodyMedium,
+                            ),
+                        ],
+                      ),
+                    ),
+                    Text(
+                      formatMoney(o.total),
+                      style: num_?.copyWith(
+                        color: context.h.pencil,
+                        decoration: TextDecoration.lineThrough,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
         ],
       ],
     );

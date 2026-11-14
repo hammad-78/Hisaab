@@ -313,6 +313,15 @@ describe('manager', () => {
   test('cannot edit a recorded sale', async () => {
     await assertFails(updateDoc(doc(db('m1'), 'cafes/c1/sales/sale_s1'), { total: 1 }));
   });
+  test('can cancel and revive a sale of own shop, not of another shop', async () => {
+    const f = db('m1');
+    await assertSucceeds(updateDoc(doc(f, 'cafes/c1/sales/sale_s1'), { cancelled: true, cancelledAt: serverTimestamp() }));
+    await assertSucceeds(updateDoc(doc(f, 'cafes/c1/sales/sale_s1'), { cancelled: false, cancelledAt: null }));
+    await assertFails(updateDoc(doc(f, 'cafes/c1/sales/sale_s2'), { cancelled: true }));
+  });
+  test('owner cannot cancel sales (read-only view)', async () => {
+    await assertFails(updateDoc(doc(db('owner1'), 'cafes/c1/sales/sale_s1'), { cancelled: true }));
+  });
   test('cannot create a cafe that pretends to be owned by someone else', async () => {
     await assertFails(setDoc(doc(db('m1'), 'cafes/c9'), { name: 'X', ownerId: 'owner1' }));
   });

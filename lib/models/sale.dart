@@ -16,6 +16,8 @@ class SaleOrder {
 
   num get total => lines.fold<num>(0, (s, l) => s + l.total);
 
+  bool get cancelled => lines.every((l) => l.cancelled);
+
   /// Groups lines into orders, keeping the incoming (newest-first) order.
   /// Older single-item sales without an orderId become one-line orders.
   static List<SaleOrder> group(List<Sale> sales) {
@@ -49,6 +51,7 @@ class Sale {
   final String day;
   final DateTime?
   createdAt; // null briefly while the server timestamp is pending
+  final bool cancelled; // cancelled orders are kept but excluded from totals
 
   const Sale({
     required this.id,
@@ -63,6 +66,7 @@ class Sale {
     required this.total,
     required this.day,
     required this.createdAt,
+    this.cancelled = false,
   });
 
   factory Sale.fromDoc(DocumentSnapshot<Map<String, dynamic>> d) {
@@ -80,6 +84,7 @@ class Sale {
       total: (m['total'] ?? 0) as num,
       day: (m['day'] ?? '') as String,
       createdAt: (m['createdAt'] as Timestamp?)?.toDate(),
+      cancelled: (m['cancelled'] ?? false) as bool,
     );
   }
 }

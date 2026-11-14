@@ -61,7 +61,11 @@ class _ManagerHomeState extends ConsumerState<ManagerHome> {
     final today = ref.watch(
       todaySalesProvider((cafeId: cafeId, shopId: shopId)),
     );
-    final todayOrders = today.valueOrNull?.map((s) => s.orderId).toSet().length;
+    final todayOrders = today.valueOrNull
+        ?.where((s) => !s.cancelled)
+        .map((s) => s.orderId)
+        .toSet()
+        .length;
 
     return Scaffold(
       appBar: AppBar(

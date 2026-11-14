@@ -245,12 +245,17 @@ const _ur = <String, String>{
   'Delete {0}?': '{0} حذف کریں؟',
   'Past sales and reports are not affected.':
       'پچھلی فروخت اور رپورٹس پر کوئی اثر نہیں پڑے گا۔',
-  'Remove this order?': 'کیا یہ آرڈر ہٹانا ہے؟',
-  '{0}, {1}. It will no longer count in today\'s sales or reports.':
-      '{0}، {1}۔ یہ آج کی فروخت یا رپورٹس میں شمار نہیں ہوگا۔',
+  'Cancel this order?': 'کیا یہ آرڈر منسوخ کرنا ہے؟',
+  '{0}, {1}. It will no longer count in today\'s sales or reports. You can revive it later.':
+      '{0}، {1}۔ یہ آج کی فروخت یا رپورٹس میں شمار نہیں ہوگا۔ آپ اسے بعد میں بحال کر سکتے ہیں۔',
   'Keep order': 'آرڈر رکھیں',
-  'Remove order': 'آرڈر ہٹائیں',
-  'Order removed': 'آرڈر ہٹا دیا گیا',
+  'Cancel order': 'آرڈر منسوخ کریں',
+  'Order cancelled': 'آرڈر منسوخ ہو گیا',
+  'Order revived': 'آرڈر بحال ہو گیا',
+  'Revive': 'بحال کریں',
+  'Cancelled orders ({0})': 'منسوخ شدہ آرڈرز ({0})',
+  'Not counted in the totals above.': 'اوپر کے کل میں شمار نہیں۔',
+  'Deleted shop': 'حذف شدہ دکان',
   "Today's orders": 'آج کے آرڈرز',
   "Today's orders could not be loaded. {0}":
       'آج کے آرڈرز لوڈ نہیں ہو سکے۔ {0}',

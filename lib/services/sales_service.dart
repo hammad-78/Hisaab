@@ -80,11 +80,19 @@ class SalesService {
       .snapshots()
       .map((q) => q.docs.map(Sale.fromDoc).toList());
 
-  /// Removes a whole order (all of its lines) at once.
-  Future<void> deleteOrder(String cafeId, SaleOrder order) {
+  /// Cancels (or revives) a whole order. The order is kept, so the owner can
+  /// still see it, but cancelled orders never count in sales or reports.
+  Future<void> setOrderCancelled(
+    String cafeId,
+    SaleOrder order, {
+    required bool cancelled,
+  }) {
     final batch = _db.batch();
     for (final l in order.lines) {
-      batch.delete(_sales(cafeId).doc(l.id));
+      batch.update(_sales(cafeId).doc(l.id), {
+        'cancelled': cancelled,
+        'cancelledAt': cancelled ? FieldValue.serverTimestamp() : null,
+      });
     }
     return batch.commit();
   }

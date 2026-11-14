@@ -20,10 +20,10 @@ class TodayOrdersScreen extends ConsumerWidget {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(ctx.tr('Remove this order?')),
+        title: Text(ctx.tr('Cancel this order?')),
         content: Text(
           ctx.trf(
-            '{0}, {1}. It will no longer count in today\'s sales or reports.',
+            '{0}, {1}. It will no longer count in today\'s sales or reports. You can revive it later.',
             [o.waiterName, formatMoney(o.total)],
           ),
         ),
@@ -38,21 +38,99 @@ class TodayOrdersScreen extends ConsumerWidget {
               minimumSize: const Size(0, 44),
             ),
             onPressed: () => Navigator.pop(ctx, true),
-            child: Text(ctx.tr('Remove order')),
+            child: Text(ctx.tr('Cancel order')),
           ),
         ],
       ),
     );
     if (ok == true) {
-      await ref.read(salesServiceProvider).deleteOrder(cafeId, o);
+      await ref
+          .read(salesServiceProvider)
+          .setOrderCancelled(cafeId, o, cancelled: true);
       if (context.mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(
-          SnackBar(content: Text(context.tr('Order removed'))),
-        );
+        ).showSnackBar(SnackBar(content: Text(context.tr('Order cancelled'))));
       }
     }
+  }
+
+  Future<void> _revive(BuildContext context, WidgetRef ref, SaleOrder o) async {
+    await ref
+        .read(salesServiceProvider)
+        .setOrderCancelled(cafeId, o, cancelled: false);
+    if (context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.tr('Order revived'))));
+    }
+  }
+
+  Widget _row(
+    BuildContext context,
+    WidgetRef ref,
+    SaleOrder o, {
+    required bool cancelled,
+  }) {
+    final theme = Theme.of(context);
+    final muted = cancelled ? context.h.pencil : null;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 4, 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      o.waiterName,
+                      style: theme.textTheme.titleSmall?.copyWith(color: muted),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      formatTime(o.createdAt),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: context.h.pencil,
+                        fontFeatures: tabular,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                for (final l in o.lines)
+                  Text(
+                    '${l.qty} x ${l.itemName}',
+                    style: theme.textTheme.bodyMedium?.copyWith(color: muted),
+                  ),
+              ],
+            ),
+          ),
+          Text(
+            formatMoney(o.total),
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontFeatures: tabular,
+              color: muted,
+              decoration: cancelled ? TextDecoration.lineThrough : null,
+            ),
+          ),
+          if (cancelled)
+            TextButton(
+              onPressed: () => _revive(context, ref, o),
+              child: Text(context.tr('Revive')),
+            )
+          else
+            IconButton(
+              tooltip: context.tr('Cancel order'),
+              icon: const Icon(Icons.cancel_outlined),
+              color: context.h.khataRed,
+              onPressed: () => _remove(context, ref, o),
+            ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -78,8 +156,10 @@ class TodayOrdersScreen extends ConsumerWidget {
           ),
         ),
         data: (lines) {
-          final orders = SaleOrder.group(lines);
-          final total = lines.fold<num>(0, (s, l) => s + l.total);
+          final all = SaleOrder.group(lines);
+          final orders = all.where((o) => !o.cancelled).toList();
+          final cancelled = all.where((o) => o.cancelled).toList();
+          final total = orders.fold<num>(0, (s, o) => s + o.total);
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -111,70 +191,38 @@ class TodayOrdersScreen extends ConsumerWidget {
               ),
               const Divider(),
               Expanded(
-                child: orders.isEmpty
+                child: all.isEmpty
                     ? Center(
                         child: Text(
                           context.tr('No orders yet today.'),
                           textAlign: TextAlign.center,
                         ),
                       )
-                    : ListView.separated(
-                        itemCount: orders.length,
-                        separatorBuilder: (_, _) => const Divider(),
-                        itemBuilder: (_, i) {
-                          final o = orders[i];
-                          return Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 12, 4, 12),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Text(
-                                            o.waiterName,
-                                            style: theme.textTheme.titleSmall,
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            formatTime(o.createdAt),
-                                            style: theme.textTheme.bodySmall
-                                                ?.copyWith(
-                                                  color: context.h.pencil,
-                                                  fontFeatures: tabular,
-                                                ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 4),
-                                      for (final l in o.lines)
-                                        Text(
-                                          '${l.qty} x ${l.itemName}',
-                                          style: theme.textTheme.bodyMedium,
-                                        ),
-                                    ],
-                                  ),
+                    : ListView(
+                        children: [
+                          for (final o in orders) ...[
+                            _row(context, ref, o, cancelled: false),
+                            const Divider(),
+                          ],
+                          if (cancelled.isNotEmpty) ...[
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+                              child: Text(
+                                context.trf('Cancelled orders ({0})', [
+                                  cancelled.length,
+                                ]),
+                                style: theme.textTheme.titleSmall?.copyWith(
+                                  color: context.h.pencil,
                                 ),
-                                Text(
-                                  formatMoney(o.total),
-                                  style: theme.textTheme.titleMedium?.copyWith(
-                                    fontFeatures: tabular,
-                                  ),
-                                ),
-                                IconButton(
-                                  tooltip: context.tr('Remove order'),
-                                  icon: const Icon(Icons.delete_outline),
-                                  color: context.h.khataRed,
-                                  onPressed: () => _remove(context, ref, o),
-                                ),
-                              ],
+                              ),
                             ),
-                          );
-                        },
+                            const Divider(),
+                            for (final o in cancelled) ...[
+                              _row(context, ref, o, cancelled: true),
+                              const Divider(),
+                            ],
+                          ],
+                        ],
                       ),
               ),
             ],

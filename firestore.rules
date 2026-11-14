@@ -140,7 +140,11 @@ service cloud.firestore {
           && request.resource.data.qty > 0;
         allow delete: if isOwnerOfCafe(cafeId)
           || isManagerOfShop(cafeId, resource.data.shopId);
-        allow update: if false;
+        // Managers may only cancel / revive a sale; nothing else can change.
+        allow update: if isManagerOfShop(cafeId, resource.data.shopId)
+          && request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(['cancelled', 'cancelledAt'])
+          && request.resource.data.cancelled is bool;
       }
     }
 
