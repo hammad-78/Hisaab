@@ -93,3 +93,15 @@ ui-debug.log
 # Cloud Functions build output and dependencies
 functions/node_modules/
 functions/lib/
+
+# Stray root-level JS tooling (not used by the Flutter app)
+/node_modules/
+/package.json
+/package-lock.json
+
+# AI tooling / skill packs and icon build output
+/.agents/
+/.claude/skills/
+/skills-lock.json
+/app_icon/build/
+/flutter_01.png
