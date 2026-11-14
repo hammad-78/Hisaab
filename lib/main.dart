@@ -5,21 +5,25 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/l10n.dart';
 import 'core/theme.dart';
+import 'core/theme_mode.dart';
 import 'features/auth/login_screen.dart';
 import 'features/manager/manager_home.dart';
 import 'features/owner/owner_home.dart';
 import 'firebase_options.dart';
 import 'models/app_user.dart';
 import 'providers/auth_provider.dart';
+import 'providers/cafe_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   final locale = await loadSavedLocale();
+  final themeMode = await loadSavedThemeMode();
   runApp(
     ProviderScope(
       overrides: [
         localeProvider.overrideWith((ref) => LocaleNotifier(locale)),
+        themeModeProvider.overrideWith((ref) => ThemeModeNotifier(themeMode)),
       ],
       child: const HisaabApp(),
     ),
@@ -42,10 +46,9 @@ class HisaabApp extends ConsumerWidget {
       ],
       title: 'Hisaab',
       debugShowCheckedModeBanner: false,
-      // Always light, even when the phone is in dark mode.
-      // (A dark theme exists in core/theme.dart if it's wanted later.)
       theme: buildTheme(Brightness.light, urdu: locale.languageCode == 'ur'),
-      themeMode: ThemeMode.light,
+      darkTheme: buildTheme(Brightness.dark, urdu: locale.languageCode == 'ur'),
+      themeMode: ref.watch(themeModeProvider),
       home: const AuthGate(),
     );
   }
@@ -76,13 +79,55 @@ class AuthGate extends ConsumerWidget {
                 showLogout: true,
               );
             }
-            return user.role == UserRole.owner
-                ? OwnerHome(user: user)
-                : ManagerHome(user: user);
+            if (user.role == UserRole.owner) return OwnerHome(user: user);
+            return _ManagerGuard(user: user);
           },
         );
       },
     );
+  }
+}
+
+/// Signs a manager out when the owner replaced their login (email change)
+/// or deactivated their shop. Their data stays; only access is blocked.
+class _ManagerGuard extends ConsumerStatefulWidget {
+  const _ManagerGuard({required this.user});
+  final AppUser user;
+
+  @override
+  ConsumerState<_ManagerGuard> createState() => _ManagerGuardState();
+}
+
+class _ManagerGuardState extends ConsumerState<_ManagerGuard> {
+  bool _signingOut = false;
+
+  void _kick(String message) {
+    if (_signingOut) return;
+    _signingOut = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(authNoticeProvider.notifier).state = message;
+      ref.read(authServiceProvider).signOut();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final user = widget.user;
+    if (user.disabled) {
+      _kick(context.tr('This login was changed by the owner. Please log in with the new email.'));
+      return const _Loading();
+    }
+    final cafeId = user.cafeId;
+    final shopId = user.shopId;
+    if (cafeId == null || shopId == null) return ManagerHome(user: user);
+
+    final shop = ref.watch(managerShopActiveProvider((cafeId: cafeId, shopId: shopId)));
+    final active = shop.valueOrNull;
+    if (active == false) {
+      _kick(context.tr('This shop has been deactivated by the owner.'));
+      return const _Loading();
+    }
+    return ManagerHome(user: user);
   }
 }
 

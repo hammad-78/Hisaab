@@ -145,8 +145,7 @@ class _ReportsTabState extends ConsumerState<ReportsTab> {
             padding: EdgeInsets.all(32),
             child: Center(child: CircularProgressIndicator()),
           ),
-          error: (e, _) =>
-              Text(context.trf('Could not load report: {0}', [e])),
+          error: (e, _) => Text(context.trf('Could not load report: {0}', [e])),
           data: (all) {
             final filtered = _shopId == null
                 ? all

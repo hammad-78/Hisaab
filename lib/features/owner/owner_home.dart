@@ -9,6 +9,7 @@ import '../../providers/cafe_provider.dart';
 import 'add_shop_screen.dart';
 import 'create_cafe_view.dart';
 import 'reports_tab.dart';
+import 'settings_screen.dart';
 import 'shops_tab.dart';
 
 /// The owner sets up shops and their managers, and reads reports.
@@ -36,19 +37,68 @@ class _OwnerHomeState extends ConsumerState<OwnerHome> {
         title: Text(cafeName == null || cafeName.isEmpty ? 'Hisaab' : cafeName),
         actions: [
           const LanguageButton(),
-          IconButton(
-            tooltip: context.tr('Log out'),
-            icon: const Icon(Icons.logout),
-            color: context.h.khataRed,
-            onPressed: () => ref.read(authServiceProvider).signOut(),
-          ),
+          if (cafeId != null)
+            IconButton(
+              tooltip: context.tr('Settings'),
+              icon: const Icon(Icons.settings_outlined),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => SettingsScreen(cafeId: cafeId),
+                ),
+              ),
+            )
+          else
+            IconButton(
+              tooltip: context.tr('Log out'),
+              icon: const Icon(Icons.logout),
+              color: context.h.khataRed,
+              onPressed: () => ref.read(authServiceProvider).signOut(),
+            ),
         ],
       ),
       body: cafeId == null
           ? CreateCafeView(user: widget.user)
-          : _tab == 0
-          ? ShopsTab(user: widget.user, cafeId: cafeId)
-          : ReportsTab(cafeId: cafeId),
+          : LayoutBuilder(
+              builder: (context, c) {
+                final content = _tab == 0
+                    ? ShopsTab(user: widget.user, cafeId: cafeId)
+                    : ReportsTab(cafeId: cafeId);
+                if (c.maxWidth < 840) return content;
+                // Wide screens (web, tablet): side rail, content kept readable.
+                return Row(
+                  children: [
+                    NavigationRail(
+                      selectedIndex: _tab,
+                      onDestinationSelected: (i) => setState(() => _tab = i),
+                      backgroundColor: context.h.slip,
+                      labelType: NavigationRailLabelType.all,
+                      destinations: [
+                        NavigationRailDestination(
+                          icon: const Icon(Icons.storefront_outlined),
+                          selectedIcon: const Icon(Icons.storefront),
+                          label: Text(context.tr('Shops')),
+                        ),
+                        NavigationRailDestination(
+                          icon: const Icon(Icons.bar_chart_outlined),
+                          selectedIcon: const Icon(Icons.bar_chart),
+                          label: Text(context.tr('Reports')),
+                        ),
+                      ],
+                    ),
+                    VerticalDivider(width: 1, color: context.h.rule),
+                    Expanded(
+                      child: Align(
+                        alignment: Alignment.topCenter,
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 880),
+                          child: content,
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
       floatingActionButton: cafeId == null || _tab != 0
           ? null
           : FloatingActionButton.extended(
@@ -60,7 +110,8 @@ class _OwnerHomeState extends ConsumerState<OwnerHome> {
                 ),
               ),
             ),
-      bottomNavigationBar: cafeId == null
+      bottomNavigationBar:
+          cafeId == null || MediaQuery.sizeOf(context).width >= 840
           ? null
           : NavigationBar(
               selectedIndex: _tab,

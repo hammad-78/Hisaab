@@ -40,3 +40,11 @@ final shopWaitersProvider = StreamProvider.autoDispose
 final shopsProvider = StreamProvider.autoDispose.family<List<Shop>, String>(
   (ref, cafeId) => ref.watch(cafeServiceProvider).shops(cafeId),
 );
+
+/// Whether a shop is active (null while loading). Used to lock out a manager
+/// whose shop the owner deactivated.
+final managerShopActiveProvider = StreamProvider.autoDispose
+    .family<bool, ShopRef>(
+      (ref, s) =>
+          ref.watch(cafeServiceProvider).shopActive(s.cafeId, s.shopId),
+    );

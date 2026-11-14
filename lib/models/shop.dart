@@ -6,6 +6,7 @@ class Shop {
   final String managerUid;
   final String managerName;
   final String managerEmail;
+  final bool active;
 
   const Shop({
     required this.id,
@@ -13,6 +14,7 @@ class Shop {
     required this.managerUid,
     required this.managerName,
     required this.managerEmail,
+    this.active = true,
   });
 
   factory Shop.fromDoc(DocumentSnapshot<Map<String, dynamic>> d) {
@@ -23,6 +25,7 @@ class Shop {
       managerUid: (m['managerUid'] ?? '') as String,
       managerName: (m['managerName'] ?? '') as String,
       managerEmail: (m['managerEmail'] ?? '') as String,
+      active: (m['active'] ?? true) as bool,
     );
   }
 }

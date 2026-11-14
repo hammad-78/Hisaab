@@ -50,9 +50,7 @@ class _ReportViewerScreenState extends State<ReportViewerScreen> {
       if (!mounted) return;
       if (saved != null && saved.isNotEmpty) {
         messenger.showSnackBar(
-          SnackBar(
-            content: Text(context.trf('Downloaded {0}', [_fileName])),
-          ),
+          SnackBar(content: Text(context.trf('Downloaded {0}', [_fileName]))),
         );
       }
     } catch (e) {
@@ -74,9 +72,7 @@ class _ReportViewerScreenState extends State<ReportViewerScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              context.trf('Could not share the file. ({0})', [e]),
-            ),
+            content: Text(context.trf('Could not share the file. ({0})', [e])),
           ),
         );
       }

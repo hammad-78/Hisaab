@@ -21,11 +21,14 @@ service cloud.firestore {
       return signedIn()
         && exists(/databases/$(database)/documents/users/$(request.auth.uid))
         && userDoc().role == 'manager'
+        && userDoc().get('disabled', false) == false
         && userDoc().cafeId == cafeId;
     }
 
+    // Manager of this shop, whose shop is still active.
     function isManagerOfShop(cafeId, shopId) {
-      return isCafeManager(cafeId) && userDoc().shopId == shopId;
+      return isCafeManager(cafeId) && userDoc().shopId == shopId
+        && get(/databases/$(database)/documents/cafes/$(cafeId)/shops/$(shopId)).data.get('active', true) == true;
     }
 
     function validName(name) {

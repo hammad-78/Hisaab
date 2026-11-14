@@ -16,3 +16,6 @@ final appUserProvider = StreamProvider<AppUser?>((ref) {
   if (user == null) return Stream.value(null);
   return ref.watch(authServiceProvider).profile(user.uid);
 });
+
+/// A one-off message shown on the login screen (e.g. after a forced logout).
+final authNoticeProvider = StateProvider<String?>((ref) => null);

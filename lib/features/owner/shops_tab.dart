@@ -55,7 +55,9 @@ class ShopsTab extends ConsumerWidget {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
-          child: Text(context.trf('Shops could not be loaded. {0}', [shopsAsync.error])),
+          child: Text(
+            context.trf('Shops could not be loaded. {0}', [shopsAsync.error]),
+          ),
         ),
       );
     }
@@ -297,7 +299,12 @@ class _ShopRow extends StatelessWidget {
       tilePadding: const EdgeInsets.fromLTRB(16, 4, 12, 4),
       childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       leading: const Icon(Icons.storefront),
-      title: Text(shop.name, style: t.titleMedium),
+      title: Text(
+        shop.active ? shop.name : '${shop.name} (${context.tr('Inactive')})',
+        style: t.titleMedium?.copyWith(
+          color: shop.active ? null : context.h.pencil,
+        ),
+      ),
       subtitle: Text(
         context.trf('Today {0}', [amount]),
         style: t.bodyMedium?.copyWith(

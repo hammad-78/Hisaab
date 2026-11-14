@@ -119,6 +119,93 @@ class CafeService {
       .snapshots()
       .map((q) => q.docs.map(Shop.fromDoc).toList());
 
+  Stream<bool> shopActive(String cafeId, String shopId) => _col(cafeId, 'shops')
+      .doc(shopId)
+      .snapshots()
+      .where((d) => d.exists)
+      .map((d) => (d.data()?['active'] ?? true) as bool);
+
+  /// Deactivated shops keep all their data; the manager just can't log in.
+  Future<void> setShopActive(String cafeId, Shop shop, bool active) =>
+      _col(cafeId, 'shops').doc(shop.id).update({'active': active});
+
+  /// Renames a shop and its manager, and optionally changes the manager's
+  /// login email.
+  ///
+  /// An Auth email can't be changed for another user from the app, so a new
+  /// login is created for [newEmail] (with [newPassword]) and the shop moves
+  /// to it. The old login's profile is marked disabled, which signs that
+  /// manager out and blocks them. Shop data is untouched.
+  Future<void> updateShop({
+    required String cafeId,
+    required Shop shop,
+    required String shopName,
+    required String managerName,
+    String? newEmail,
+    String? newPassword,
+  }) async {
+    final email = newEmail?.trim() ?? '';
+    final changeEmail =
+        email.isNotEmpty &&
+        email.toLowerCase() != shop.managerEmail.toLowerCase();
+
+    if (!changeEmail) {
+      final batch = _db.batch();
+      batch.update(_col(cafeId, 'shops').doc(shop.id), {
+        'name': shopName.trim(),
+        'managerName': managerName.trim(),
+      });
+      if (shop.managerUid.isNotEmpty) {
+        batch.update(_db.collection('users').doc(shop.managerUid), {
+          'name': managerName.trim(),
+        });
+      }
+      await batch.commit();
+      return;
+    }
+
+    final secondary = await Firebase.initializeApp(
+      name: 'manager-email-${DateTime.now().microsecondsSinceEpoch}',
+      options: Firebase.app().options,
+    );
+    final secondaryAuth = FirebaseAuth.instanceFor(app: secondary);
+    try {
+      final cred = await secondaryAuth.createUserWithEmailAndPassword(
+        email: email,
+        password: newPassword ?? '',
+      );
+      final newUid = cred.user!.uid;
+      try {
+        final batch = _db.batch();
+        batch.set(_db.collection('users').doc(newUid), {
+          'name': managerName.trim(),
+          'email': email,
+          'role': 'manager',
+          'cafeId': cafeId,
+          'shopId': shop.id,
+        });
+        if (shop.managerUid.isNotEmpty) {
+          batch.update(_db.collection('users').doc(shop.managerUid), {
+            'disabled': true,
+          });
+        }
+        batch.update(_col(cafeId, 'shops').doc(shop.id), {
+          'name': shopName.trim(),
+          'managerName': managerName.trim(),
+          'managerUid': newUid,
+          'managerEmail': email,
+        });
+        await batch.commit();
+      } catch (e) {
+        await cred.user!.delete();
+        rethrow;
+      }
+    } finally {
+      await secondaryAuth.signOut();
+      await secondary.delete();
+    }
+  }
+
   /// Creates a shop and its manager login.
   ///
   /// The Auth account is created on a temporary second Firebase app so the

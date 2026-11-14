@@ -81,6 +81,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       _busy = true;
       _error = null;
     });
+    ref.read(authNoticeProvider.notifier).state = null;
     final auth = ref.read(authServiceProvider);
     try {
       if (_registerMode) {
@@ -219,6 +220,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             : null,
                         onFieldSubmitted: (_) => _submit(),
                       ),
+                      if (_error == null &&
+                          ref.watch(authNoticeProvider) != null) ...[
+                        const SizedBox(height: 12),
+                        Text(
+                          ref.watch(authNoticeProvider)!,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.error,
+                          ),
+                        ),
+                      ],
                       if (_error != null) ...[
                         const SizedBox(height: 12),
                         Text(

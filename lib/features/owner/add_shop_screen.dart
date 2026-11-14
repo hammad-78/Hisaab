@@ -49,9 +49,7 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
           );
       if (!mounted) return;
       Navigator.of(context).pop();
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(context.tr('Shop and manager created'))),
       );
     } on FirebaseAuthException catch (e) {
@@ -61,9 +59,7 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
             : (e.message ?? context.tr('Could not create manager.')),
       );
     } catch (e) {
-      setState(
-        () => _error = context.trf('Could not create shop: {0}', [e]),
-      );
+      setState(() => _error = context.trf('Could not create shop: {0}', [e]));
     } finally {
       if (mounted) setState(() => _busy = false);
     }

@@ -160,6 +160,34 @@ const _ur = <String, String>{
   'Manager email': 'مینیجر کی ای میل',
   'Create shop': 'دکان بنائیں',
 
+  'Edit shop': 'دکان میں ترمیم کریں',
+  'Edit': 'ترمیم',
+  'Could not save: {0}': 'محفوظ نہیں ہو سکا: {0}',
+  'New manager password': 'مینیجر کا نیا پاس ورڈ',
+  'The current manager will be logged out. Give the new email and this password to the manager.':
+      'موجودہ مینیجر لاگ آؤٹ ہو جائے گا۔ نئی ای میل اور یہ پاس ورڈ مینیجر کو دیں۔',
+  'Settings': 'سیٹنگز',
+  'Appearance': 'ظاہری شکل',
+  'Light': 'روشن',
+  'Dark': 'گہرا',
+  'System': 'سسٹم',
+  'Activate': 'فعال کریں',
+  'No shops yet.': 'ابھی کوئی دکان نہیں۔',
+  'Shop settings': 'دکان کی سیٹنگز',
+  'Deactivate shop': 'دکان غیر فعال کریں',
+  'Activate shop': 'دکان فعال کریں',
+  'Deactivate': 'غیر فعال کریں',
+  'Inactive': 'غیر فعال',
+  'Deactivate shop {0}?': 'دکان {0} غیر فعال کریں؟',
+  'The manager will be logged out and cannot log in until you activate the shop again. All its data is kept.':
+      'مینیجر لاگ آؤٹ ہو جائے گا اور دکان دوبارہ فعال کرنے تک لاگ ان نہیں کر سکے گا۔ تمام ڈیٹا محفوظ رہے گا۔',
+  'Shop deactivated': 'دکان غیر فعال کر دی گئی',
+  'Shop activated': 'دکان فعال کر دی گئی',
+  'This login was changed by the owner. Please log in with the new email.':
+      'مالک نے یہ لاگ ان تبدیل کر دیا ہے۔ نئی ای میل سے لاگ ان کریں۔',
+  'This shop has been deactivated by the owner.':
+      'مالک نے اس دکان کو غیر فعال کر دیا ہے۔',
+
   // reports
   'Yesterday': 'کل',
   'Last 7 days': 'پچھلے 7 دن',

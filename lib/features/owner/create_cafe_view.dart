@@ -41,9 +41,7 @@ class _CreateCafeViewState extends ConsumerState<CreateCafeView> {
       // The profile stream updates and OwnerHome switches to the shop list.
     } catch (e) {
       if (mounted) {
-        setState(
-          () => _error = context.trf('Could not create cafe: {0}', [e]),
-        );
+        setState(() => _error = context.trf('Could not create cafe: {0}', [e]));
       }
     } finally {
       if (mounted) setState(() => _busy = false);
