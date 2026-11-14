@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/format.dart';
+import '../../core/l10n.dart';
 import '../../core/theme.dart';
 import '../../models/report.dart';
 import '../../models/shop.dart';
@@ -115,7 +116,7 @@ class _ReportsTabState extends ConsumerState<ReportsTab> {
                 label: Text(
                   p == _Preset.custom && _preset == _Preset.custom
                       ? (fromKey == toKey ? fromKey : '$fromKey → $toKey')
-                      : _presetLabels[p]!,
+                      : context.tr(_presetLabels[p]!),
                 ),
                 selected: _preset == p,
                 onSelected: (_) => p == _Preset.custom
@@ -127,9 +128,12 @@ class _ReportsTabState extends ConsumerState<ReportsTab> {
         const SizedBox(height: 12),
         DropdownButtonFormField<String?>(
           initialValue: _shopId,
-          decoration: const InputDecoration(labelText: 'Shop', isDense: true),
+          decoration: InputDecoration(
+            labelText: context.tr('Shop'),
+            isDense: true,
+          ),
           items: [
-            const DropdownMenuItem(value: null, child: Text('All shops')),
+            DropdownMenuItem(value: null, child: Text(context.tr('All shops'))),
             for (final s in shops)
               DropdownMenuItem(value: s.id, child: Text(s.name)),
           ],
@@ -141,7 +145,8 @@ class _ReportsTabState extends ConsumerState<ReportsTab> {
             padding: EdgeInsets.all(32),
             child: Center(child: CircularProgressIndicator()),
           ),
-          error: (e, _) => Text('Could not load report: $e'),
+          error: (e, _) =>
+              Text(context.trf('Could not load report: {0}', [e])),
           data: (all) {
             final filtered = _shopId == null
                 ? all
@@ -192,7 +197,7 @@ class _ReportView extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const SizedBox(height: 28),
-            Text(title, style: theme.textTheme.titleMedium),
+            Text(context.tr(title), style: theme.textTheme.titleMedium),
             const SizedBox(height: 8),
             Padding(
               padding: const EdgeInsets.only(bottom: 6),
@@ -202,7 +207,7 @@ class _ReportView extends StatelessWidget {
                   SizedBox(
                     width: 64,
                     child: Text(
-                      countLabel,
+                      context.tr(countLabel),
                       textAlign: TextAlign.right,
                       style: head,
                     ),
@@ -210,7 +215,7 @@ class _ReportView extends StatelessWidget {
                   SizedBox(
                     width: 110,
                     child: Text(
-                      'Amount',
+                      context.tr('Amount'),
                       textAlign: TextAlign.right,
                       style: head,
                     ),
@@ -269,7 +274,7 @@ class _ReportView extends StatelessWidget {
       children: [
         // The total, ruled off like the bottom of a ledger page.
         Text(
-          'Total sales',
+          context.tr('Total sales'),
           style: theme.textTheme.bodyLarge?.copyWith(color: context.h.pencil),
         ),
         const SizedBox(height: 2),
@@ -305,8 +310,8 @@ class _ReportView extends StatelessWidget {
         ),
         const SizedBox(height: 10),
         Text(
-          '${r.orders} ${r.orders == 1 ? 'order' : 'orders'}, '
-          '${r.itemsSold} ${r.itemsSold == 1 ? 'item' : 'items'} sold',
+          '${context.plural(r.orders, 'order', 'orders')}, '
+          '${context.plural(r.itemsSold, 'item', 'items')} ${context.tr('sold')}',
           style: theme.textTheme.bodyLarge,
         ),
         const SizedBox(height: 16),
@@ -317,7 +322,7 @@ class _ReportView extends StatelessWidget {
                 style: OutlinedButton.styleFrom(foregroundColor: _pdfRed),
                 onPressed: r.isEmpty ? null : () => onView(ReportFormat.pdf),
                 icon: const Icon(Icons.picture_as_pdf),
-                label: const Text('View PDF'),
+                label: Text(context.tr('View PDF')),
               ),
             ),
             const SizedBox(width: 8),
@@ -326,17 +331,19 @@ class _ReportView extends StatelessWidget {
                 style: OutlinedButton.styleFrom(foregroundColor: _excelGreen),
                 onPressed: r.isEmpty ? null : () => onView(ReportFormat.excel),
                 icon: const Icon(Icons.grid_on),
-                label: const Text('View Excel'),
+                label: Text(context.tr('View Excel')),
               ),
             ),
           ],
         ),
         if (r.isEmpty)
-          const Padding(
-            padding: EdgeInsets.all(32),
+          Padding(
+            padding: const EdgeInsets.all(32),
             child: Center(
               child: Text(
-                'No sales in this period. Pick another date range or shop.',
+                context.tr(
+                  'No sales in this period. Pick another date range or shop.',
+                ),
                 textAlign: TextAlign.center,
               ),
             ),

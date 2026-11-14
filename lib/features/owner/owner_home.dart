@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/l10n.dart';
 import '../../core/theme.dart';
 import '../../models/app_user.dart';
 import '../../providers/auth_provider.dart';
@@ -34,8 +35,9 @@ class _OwnerHomeState extends ConsumerState<OwnerHome> {
       appBar: AppBar(
         title: Text(cafeName == null || cafeName.isEmpty ? 'Hisaab' : cafeName),
         actions: [
+          const LanguageButton(),
           IconButton(
-            tooltip: 'Log out',
+            tooltip: context.tr('Log out'),
             icon: const Icon(Icons.logout),
             color: context.h.khataRed,
             onPressed: () => ref.read(authServiceProvider).signOut(),
@@ -51,7 +53,7 @@ class _OwnerHomeState extends ConsumerState<OwnerHome> {
           ? null
           : FloatingActionButton.extended(
               icon: const Icon(Icons.add_business),
-              label: const Text('Add shop'),
+              label: Text(context.tr('Add shop')),
               onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (_) => AddShopScreen(cafeId: cafeId),
@@ -63,14 +65,14 @@ class _OwnerHomeState extends ConsumerState<OwnerHome> {
           : NavigationBar(
               selectedIndex: _tab,
               onDestinationSelected: (i) => setState(() => _tab = i),
-              destinations: const [
+              destinations: [
                 NavigationDestination(
-                  icon: Icon(Icons.storefront),
-                  label: 'Shops',
+                  icon: const Icon(Icons.storefront),
+                  label: context.tr('Shops'),
                 ),
                 NavigationDestination(
-                  icon: Icon(Icons.bar_chart),
-                  label: 'Reports',
+                  icon: const Icon(Icons.bar_chart),
+                  label: context.tr('Reports'),
                 ),
               ],
             ),

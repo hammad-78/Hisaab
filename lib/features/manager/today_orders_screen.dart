@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/format.dart';
+import '../../core/l10n.dart';
 import '../../core/theme.dart';
 import '../../models/sale.dart';
 import '../../providers/sales_provider.dart';
@@ -19,14 +20,17 @@ class TodayOrdersScreen extends ConsumerWidget {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Remove this order?'),
+        title: Text(ctx.tr('Remove this order?')),
         content: Text(
-          '${o.waiterName}, ${formatMoney(o.total)}. It will no longer count in today\'s sales or reports.',
+          ctx.trf(
+            '{0}, {1}. It will no longer count in today\'s sales or reports.',
+            [o.waiterName, formatMoney(o.total)],
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Keep order'),
+            child: Text(ctx.tr('Keep order')),
           ),
           FilledButton(
             style: FilledButton.styleFrom(
@@ -34,7 +38,7 @@ class TodayOrdersScreen extends ConsumerWidget {
               minimumSize: const Size(0, 44),
             ),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Remove order'),
+            child: Text(ctx.tr('Remove order')),
           ),
         ],
       ),
@@ -44,7 +48,9 @@ class TodayOrdersScreen extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('Order removed')));
+        ).showSnackBar(
+          SnackBar(content: Text(context.tr('Order removed'))),
+        );
       }
     }
   }
@@ -57,13 +63,18 @@ class TodayOrdersScreen extends ConsumerWidget {
     );
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Today's orders")),
+      appBar: AppBar(
+        title: Text(context.tr("Today's orders")),
+        actions: const [LanguageButton()],
+      ),
       body: sales.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
-            child: Text('Today\'s orders could not be loaded. $e'),
+            child: Text(
+              context.trf('Today\'s orders could not be loaded. {0}', [e]),
+            ),
           ),
         ),
         data: (lines) {
@@ -81,8 +92,8 @@ class TodayOrdersScreen extends ConsumerWidget {
                     Expanded(
                       child: Text(
                         orders.length == 1
-                            ? '1 order so far'
-                            : '${orders.length} orders so far',
+                            ? context.tr('1 order so far')
+                            : context.trf('{0} orders so far', [orders.length]),
                         style: theme.textTheme.bodyLarge?.copyWith(
                           color: context.h.pencil,
                         ),
@@ -101,9 +112,9 @@ class TodayOrdersScreen extends ConsumerWidget {
               const Divider(),
               Expanded(
                 child: orders.isEmpty
-                    ? const Center(
+                    ? Center(
                         child: Text(
-                          'No orders yet today.',
+                          context.tr('No orders yet today.'),
                           textAlign: TextAlign.center,
                         ),
                       )
@@ -155,7 +166,7 @@ class TodayOrdersScreen extends ConsumerWidget {
                                   ),
                                 ),
                                 IconButton(
-                                  tooltip: 'Remove order',
+                                  tooltip: context.tr('Remove order'),
                                   icon: const Icon(Icons.delete_outline),
                                   color: context.h.khataRed,
                                   onPressed: () => _remove(context, ref, o),

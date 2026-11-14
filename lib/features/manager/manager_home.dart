@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/format.dart';
+import '../../core/l10n.dart';
 import '../../core/theme.dart';
 import '../../models/app_user.dart';
 import '../../models/item.dart';
@@ -36,12 +37,17 @@ class _ManagerHomeState extends ConsumerState<ManagerHome> {
 
     if (cafeId == null || shopId == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Hisaab'), actions: [_logout(ref)]),
-        body: const Center(
+        appBar: AppBar(
+          title: const Text('Hisaab'),
+          actions: [const LanguageButton(), _logout(ref)],
+        ),
+        body: Center(
           child: Padding(
-            padding: EdgeInsets.all(24),
+            padding: const EdgeInsets.all(24),
             child: Text(
-              'This login is not linked to a shop. Ask the cafe owner to add you as a shop manager.',
+              context.tr(
+                'This login is not linked to a shop. Ask the cafe owner to add you as a shop manager.',
+              ),
               textAlign: TextAlign.center,
             ),
           ),
@@ -61,6 +67,7 @@ class _ManagerHomeState extends ConsumerState<ManagerHome> {
       appBar: AppBar(
         title: Text(shopName),
         actions: [
+          const LanguageButton(),
           TextButton.icon(
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(
@@ -69,7 +76,11 @@ class _ManagerHomeState extends ConsumerState<ManagerHome> {
               ),
             ),
             icon: const Icon(Icons.receipt_long),
-            label: Text(todayOrders == null ? 'Today' : 'Today ($todayOrders)'),
+            label: Text(
+              todayOrders == null
+                  ? context.tr('Today')
+                  : context.trf('Today ({0})', [todayOrders]),
+            ),
           ),
           _logout(ref),
         ],
@@ -92,13 +103,13 @@ class _ManagerHomeState extends ConsumerState<ManagerHome> {
       floatingActionButton: switch (_tab) {
         1 => FloatingActionButton.extended(
           icon: const Icon(Icons.add),
-          label: const Text('Add item'),
+          label: Text(context.tr('Add item')),
           onPressed: () =>
               showItemDialog(context, ref, cafeId: cafeId, shopId: shopId),
         ),
         2 => FloatingActionButton.extended(
           icon: const Icon(Icons.person_add),
-          label: const Text('Add waiter'),
+          label: Text(context.tr('Add waiter')),
           onPressed: () =>
               showWaiterDialog(context, ref, cafeId: cafeId, shopId: shopId),
         ),
@@ -107,20 +118,26 @@ class _ManagerHomeState extends ConsumerState<ManagerHome> {
       bottomNavigationBar: NavigationBar(
         selectedIndex: _tab,
         onDestinationSelected: (i) => setState(() => _tab = i),
-        destinations: const [
+        destinations: [
           NavigationDestination(
-            icon: Icon(Icons.point_of_sale),
-            label: 'Counter',
+            icon: const Icon(Icons.point_of_sale),
+            label: context.tr('Counter'),
           ),
-          NavigationDestination(icon: Icon(Icons.coffee), label: 'Menu'),
-          NavigationDestination(icon: Icon(Icons.person), label: 'Waiters'),
+          NavigationDestination(
+            icon: const Icon(Icons.coffee),
+            label: context.tr('Menu'),
+          ),
+          NavigationDestination(
+            icon: const Icon(Icons.person),
+            label: context.tr('Waiters'),
+          ),
         ],
       ),
     );
   }
 
   Widget _logout(WidgetRef ref) => IconButton(
-    tooltip: 'Log out',
+    tooltip: context.tr('Log out'),
     icon: const Icon(Icons.logout),
     color: HTokens.light.khataRed,
     onPressed: () => ref.read(authServiceProvider).signOut(),
@@ -185,7 +202,10 @@ class _CounterState extends ConsumerState<_Counter> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Order placed for ${waiter.name}: ${formatMoney(total)}',
+            context.trf('Order placed for {0}: {1}', [
+              waiter.name,
+              formatMoney(total),
+            ]),
           ),
         ),
       );
@@ -194,7 +214,10 @@ class _CounterState extends ConsumerState<_Counter> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Order not saved. Check your connection and try again. ($e)',
+              context.trf(
+                'Order not saved. Check your connection and try again. ({0})',
+                [e],
+              ),
             ),
           ),
         );
@@ -232,19 +255,19 @@ class _CounterState extends ConsumerState<_Counter> {
         // ---- waiter ----
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
-          child: Text('Waiter', style: theme.textTheme.titleSmall),
+          child: Text(context.tr('Waiter'), style: theme.textTheme.titleSmall),
         ),
         SizedBox(
           height: 48,
           child: waiters.isEmpty
               ? Align(
-                  alignment: Alignment.centerLeft,
+                  alignment: AlignmentDirectional.centerStart,
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                     child: TextButton.icon(
                       onPressed: () => widget.onOpenTab(2),
                       icon: const Icon(Icons.person_add),
-                      label: const Text('No waiters yet. Add waiters'),
+                      label: Text(context.tr('No waiters yet. Add waiters')),
                     ),
                   ),
                 )
@@ -274,7 +297,7 @@ class _CounterState extends ConsumerState<_Counter> {
           padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
           child: Row(
             children: [
-              Text('Menu', style: theme.textTheme.titleSmall),
+              Text(context.tr('Menu'), style: theme.textTheme.titleSmall),
               const SizedBox(width: 12),
               if (items.length > 8)
                 Expanded(
@@ -282,9 +305,9 @@ class _CounterState extends ConsumerState<_Counter> {
                     height: 40,
                     child: TextField(
                       onChanged: (v) => setState(() => _search = v),
-                      decoration: const InputDecoration(
-                        hintText: 'Find an item',
-                        prefixIcon: Icon(Icons.search, size: 20),
+                      decoration: InputDecoration(
+                        hintText: context.tr('Find an item'),
+                        prefixIcon: const Icon(Icons.search, size: 20),
                         contentPadding: EdgeInsets.zero,
                       ),
                     ),
@@ -303,8 +326,10 @@ class _CounterState extends ConsumerState<_Counter> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Text(
-                          'Your menu is empty. Add what this shop sells to start taking orders.',
+                        Text(
+                          context.tr(
+                            'Your menu is empty. Add what this shop sells to start taking orders.',
+                          ),
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 12),
@@ -314,7 +339,7 @@ class _CounterState extends ConsumerState<_Counter> {
                           ),
                           onPressed: () => widget.onOpenTab(1),
                           icon: const Icon(Icons.add),
-                          label: const Text('Add menu items'),
+                          label: Text(context.tr('Add menu items')),
                         ),
                       ],
                     ),
@@ -367,8 +392,11 @@ class _ItemTile extends StatelessWidget {
     final on = qty > 0;
     return Semantics(
       button: true,
-      label:
-          '${item.name}, ${formatMoney(item.price)}${on ? ', $qty in order' : ''}. Tap to add one.',
+      label: context.trf('{0}, {1}. Tap to add one.', [
+        item.name,
+        formatMoney(item.price) +
+            (on ? ', ${context.trf('{0} in order', [qty])}' : ''),
+      ]),
       excludeSemantics: true,
       child: Material(
         color: on ? context.h.inkSoft : context.h.slip,
@@ -401,7 +429,7 @@ class _ItemTile extends StatelessWidget {
                     Expanded(
                       child: FittedBox(
                         fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerLeft,
+                        alignment: AlignmentDirectional.centerStart,
                         child: Text(
                           formatMoney(item.price),
                           maxLines: 1,

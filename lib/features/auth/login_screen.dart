@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/l10n.dart';
 import '../../core/theme.dart';
 import '../../providers/auth_provider.dart';
 
@@ -97,7 +98,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     } on FirebaseAuthException catch (e) {
       setState(() => _error = _message(e));
     } catch (e) {
-      setState(() => _error = 'Something went wrong. Please try again.');
+      setState(() => _error = context.tr('Something went wrong. Please try again.'));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -108,17 +109,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       case 'invalid-credential':
       case 'wrong-password':
       case 'user-not-found':
-        return 'Incorrect email or password.';
+        return context.tr('Incorrect email or password.');
       case 'email-already-in-use':
-        return 'This email is already registered.';
+        return context.tr('This email is already registered.');
       case 'weak-password':
-        return 'Password must be at least 6 characters.';
+        return context.tr('Password must be at least 6 characters.');
       case 'invalid-email':
-        return 'Enter a valid email address.';
+        return context.tr('Enter a valid email address.');
       case 'network-request-failed':
-        return 'No internet connection.';
+        return context.tr('No internet connection.');
       default:
-        return e.message ?? 'Authentication failed.';
+        return e.message ?? context.tr('Authentication failed.');
     }
   }
 
@@ -138,12 +139,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      const Align(
+                        alignment: AlignmentDirectional.centerEnd,
+                        child: LanguageButton(),
+                      ),
                       const _Wordmark(),
                       const SizedBox(height: 28),
                       Text(
-                        _registerMode
-                            ? 'Create an owner account. You can add your cafe, shops and managers next.'
-                            : 'Log in with the email and password you were given.',
+                        context.tr(
+                          _registerMode
+                              ? 'Create an owner account. You can add your cafe, shops and managers next.'
+                              : 'Log in with the email and password you were given.',
+                        ),
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           color: context.h.pencil,
                         ),
@@ -155,11 +162,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           textInputAction: TextInputAction.next,
                           textCapitalization: TextCapitalization.words,
                           autofillHints: const [AutofillHints.name],
-                          decoration: const InputDecoration(
-                            labelText: 'Your name',
+                          decoration: InputDecoration(
+                            labelText: context.tr('Your name'),
                           ),
                           validator: (v) => (v == null || v.trim().isEmpty)
-                              ? 'Enter your name'
+                              ? context.tr('Enter your name')
                               : null,
                         ),
                         const SizedBox(height: 12),
@@ -173,9 +180,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           AutofillHints.email,
                           AutofillHints.username,
                         ],
-                        decoration: const InputDecoration(labelText: 'Email'),
+                        decoration: InputDecoration(labelText: context.tr('Email')),
                         validator: (v) => (v == null || !v.contains('@'))
-                            ? 'Enter a valid email'
+                            ? context.tr('Enter a valid email')
                             : null,
                       ),
                       const SizedBox(height: 12),
@@ -191,11 +198,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               : AutofillHints.password,
                         ],
                         decoration: InputDecoration(
-                          labelText: 'Password',
+                          labelText: context.tr('Password'),
                           suffixIcon: IconButton(
-                            tooltip: _showPassword
-                                ? 'Hide password'
-                                : 'Show password',
+                            tooltip: context.tr(
+                              _showPassword
+                                  ? 'Hide password'
+                                  : 'Show password',
+                            ),
                             icon: Icon(
                               _showPassword
                                   ? Icons.visibility_off_outlined
@@ -206,7 +215,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ),
                         ),
                         validator: (v) => (v == null || v.length < 6)
-                            ? 'At least 6 characters'
+                            ? context.tr('At least 6 characters')
                             : null,
                         onFieldSubmitted: (_) => _submit(),
                       ),
@@ -231,9 +240,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 ),
                               )
                             : Text(
-                                _registerMode
-                                    ? 'Create owner account'
-                                    : 'Log in',
+                                context.tr(
+                                  _registerMode
+                                      ? 'Create owner account'
+                                      : 'Log in',
+                                ),
                               ),
                       ),
                       TextButton(
@@ -244,9 +255,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 _error = null;
                               }),
                         child: Text(
-                          _registerMode
-                              ? 'Already have an account? Log in'
-                              : 'Cafe owner? Create an account',
+                          context.tr(
+                            _registerMode
+                                ? 'Already have an account? Log in'
+                                : 'Cafe owner? Create an account',
+                          ),
                         ),
                       ),
                     ],

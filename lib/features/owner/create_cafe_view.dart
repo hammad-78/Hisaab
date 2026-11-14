@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/l10n.dart';
 import '../../models/app_user.dart';
 import '../../providers/cafe_provider.dart';
 
@@ -26,7 +27,7 @@ class _CreateCafeViewState extends ConsumerState<CreateCafeView> {
 
   Future<void> _create() async {
     if (_name.text.trim().isEmpty) {
-      setState(() => _error = 'Enter a cafe name');
+      setState(() => _error = context.tr('Enter a cafe name'));
       return;
     }
     setState(() {
@@ -39,7 +40,11 @@ class _CreateCafeViewState extends ConsumerState<CreateCafeView> {
           .createCafe(ownerUid: widget.user.uid, name: _name.text);
       // The profile stream updates and OwnerHome switches to the shop list.
     } catch (e) {
-      if (mounted) setState(() => _error = 'Could not create cafe: $e');
+      if (mounted) {
+        setState(
+          () => _error = context.trf('Could not create cafe: {0}', [e]),
+        );
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -57,7 +62,7 @@ class _CreateCafeViewState extends ConsumerState<CreateCafeView> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                'Create your cafe',
+                context.tr('Create your cafe'),
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.titleLarge,
               ),
@@ -65,7 +70,7 @@ class _CreateCafeViewState extends ConsumerState<CreateCafeView> {
               TextField(
                 controller: _name,
                 textCapitalization: TextCapitalization.words,
-                decoration: const InputDecoration(labelText: 'Cafe name'),
+                decoration: InputDecoration(labelText: context.tr('Cafe name')),
                 onSubmitted: (_) => _create(),
               ),
               if (_error != null) ...[
@@ -84,7 +89,7 @@ class _CreateCafeViewState extends ConsumerState<CreateCafeView> {
                         width: 20,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Text('Create cafe'),
+                    : Text(context.tr('Create cafe')),
               ),
             ],
           ),

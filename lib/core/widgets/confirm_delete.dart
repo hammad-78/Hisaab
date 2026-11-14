@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n.dart';
 import '../theme.dart';
 
 /// Asks before deleting a menu item or waiter. Past sales keep their own copy
@@ -8,12 +9,12 @@ Future<bool> confirmDelete(BuildContext context, String what) async {
   final ok = await showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
-      title: Text('Delete $what?'),
-      content: const Text('Past sales and reports are not affected.'),
+      title: Text(ctx.trf('Delete {0}?', [what])),
+      content: Text(ctx.tr('Past sales and reports are not affected.')),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(ctx, false),
-          child: const Text('Cancel'),
+          child: Text(ctx.tr('Cancel')),
         ),
         FilledButton(
           style: FilledButton.styleFrom(
@@ -21,7 +22,7 @@ Future<bool> confirmDelete(BuildContext context, String what) async {
             minimumSize: const Size(0, 44),
           ),
           onPressed: () => Navigator.pop(ctx, true),
-          child: const Text('Delete'),
+          child: Text(ctx.tr('Delete')),
         ),
       ],
     ),

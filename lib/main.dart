@@ -1,7 +1,9 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'core/l10n.dart';
 import 'core/theme.dart';
 import 'features/auth/login_screen.dart';
 import 'features/manager/manager_home.dart';
@@ -13,20 +15,36 @@ import 'providers/auth_provider.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  runApp(const ProviderScope(child: HisaabApp()));
+  final locale = await loadSavedLocale();
+  runApp(
+    ProviderScope(
+      overrides: [
+        localeProvider.overrideWith((ref) => LocaleNotifier(locale)),
+      ],
+      child: const HisaabApp(),
+    ),
+  );
 }
 
-class HisaabApp extends StatelessWidget {
+class HisaabApp extends ConsumerWidget {
   const HisaabApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final locale = ref.watch(localeProvider);
     return MaterialApp(
+      locale: locale,
+      supportedLocales: const [englishLocale, urduLocale],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       title: 'Hisaab',
       debugShowCheckedModeBanner: false,
       // Always light, even when the phone is in dark mode.
       // (A dark theme exists in core/theme.dart if it's wanted later.)
-      theme: buildTheme(Brightness.light),
+      theme: buildTheme(Brightness.light, urdu: locale.languageCode == 'ur'),
       themeMode: ThemeMode.light,
       home: const AuthGate(),
     );
@@ -43,14 +61,14 @@ class AuthGate extends ConsumerWidget {
 
     return auth.when(
       loading: () => const _Loading(),
-      error: (e, _) => _Message('Auth error: $e'),
+      error: (e, _) => _Message('${context.tr('Auth error')}: $e'),
       data: (firebaseUser) {
         if (firebaseUser == null) return const LoginScreen();
 
         final profile = ref.watch(appUserProvider);
         return profile.when(
           loading: () => const _Loading(),
-          error: (e, _) => _Message('Could not load profile: $e'),
+          error: (e, _) => _Message('${context.tr('Could not load profile')}: $e'),
           data: (user) {
             if (user == null) {
               return const _Message(
@@ -89,11 +107,14 @@ class _Message extends ConsumerWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(text, textAlign: TextAlign.center),
+              Text(
+                text.contains('Setting up') ? context.tr(text) : text,
+                textAlign: TextAlign.center,
+              ),
               if (showLogout)
                 TextButton(
                   onPressed: () => ref.read(authServiceProvider).signOut(),
-                  child: const Text('Log out'),
+                  child: Text(context.tr('Log out')),
                 ),
             ],
           ),

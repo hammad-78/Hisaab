@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/l10n.dart';
 import '../../core/theme.dart';
 import '../../core/widgets/confirm_delete.dart';
 import '../../core/widgets/list_heading.dart';
@@ -21,22 +22,22 @@ Future<void> showWaiterDialog(
   return showDialog(
     context: context,
     builder: (ctx) => AlertDialog(
-      title: Text(existing == null ? 'Add waiter' : 'Rename waiter'),
+      title: Text(ctx.tr(existing == null ? 'Add waiter' : 'Rename waiter')),
       content: Form(
         key: formKey,
         child: TextFormField(
           controller: name,
           autofocus: true,
           textCapitalization: TextCapitalization.words,
-          decoration: const InputDecoration(labelText: 'Waiter name'),
+          decoration: InputDecoration(labelText: ctx.tr('Waiter name')),
           validator: (v) =>
-              (v == null || v.trim().isEmpty) ? 'Enter a name' : null,
+              (v == null || v.trim().isEmpty) ? ctx.tr('Enter a name') : null,
         ),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(ctx),
-          child: const Text('Cancel'),
+          child: Text(ctx.tr('Cancel')),
         ),
         FilledButton(
           style: FilledButton.styleFrom(minimumSize: const Size(0, 44)),
@@ -52,7 +53,7 @@ Future<void> showWaiterDialog(
                 );
             if (ctx.mounted) Navigator.pop(ctx);
           },
-          child: Text(existing == null ? 'Add waiter' : 'Save'),
+          child: Text(ctx.tr(existing == null ? 'Add waiter' : 'Save')),
         ),
       ],
     ),
@@ -72,14 +73,18 @@ class WaitersTab extends ConsumerWidget {
     );
     return waiters.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Waiters could not be loaded. $e')),
+      error: (e, _) => Center(
+        child: Text(context.trf('Waiters could not be loaded. {0}', [e])),
+      ),
       data: (list) {
         if (list.isEmpty) {
-          return const Center(
+          return Center(
             child: Padding(
-              padding: EdgeInsets.all(24),
+              padding: const EdgeInsets.all(24),
               child: Text(
-                'No waiters yet.\nTap "Add waiter" to add the people who take orders.',
+                context.tr(
+                  'No waiters yet.\nTap "Add waiter" to add the people who take orders.',
+                ),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -111,7 +116,7 @@ class WaitersTab extends ConsumerWidget {
                 existing: w,
               ),
               trailing: IconButton(
-                tooltip: 'Delete ${w.name}',
+                tooltip: context.trf('Delete {0}', [w.name]),
                 icon: const Icon(Icons.delete_outline),
                 color: context.h.khataRed,
                 onPressed: () async {

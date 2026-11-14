@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/l10n.dart';
 import '../../providers/cafe_provider.dart';
 
 class AddShopScreen extends ConsumerStatefulWidget {
@@ -50,26 +51,34 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
       Navigator.of(context).pop();
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Shop and manager created')));
+      ).showSnackBar(
+        SnackBar(content: Text(context.tr('Shop and manager created'))),
+      );
     } on FirebaseAuthException catch (e) {
       setState(
         () => _error = e.code == 'email-already-in-use'
-            ? 'That email is already used by another account.'
-            : (e.message ?? 'Could not create manager.'),
+            ? context.tr('That email is already used by another account.')
+            : (e.message ?? context.tr('Could not create manager.')),
       );
     } catch (e) {
-      setState(() => _error = 'Could not create shop: $e');
+      setState(
+        () => _error = context.trf('Could not create shop: {0}', [e]),
+      );
     } finally {
       if (mounted) setState(() => _busy = false);
     }
   }
 
-  InputDecoration _dec(String label) => InputDecoration(labelText: label);
+  InputDecoration _dec(String label) =>
+      InputDecoration(labelText: context.tr(label));
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Add shop')),
+      appBar: AppBar(
+        title: Text(context.tr('Add shop')),
+        actions: const [LanguageButton()],
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Form(
@@ -82,12 +91,12 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
                 textCapitalization: TextCapitalization.words,
                 decoration: _dec('Shop name'),
                 validator: (v) => (v == null || v.trim().isEmpty)
-                    ? 'Enter a shop name'
+                    ? context.tr('Enter a shop name')
                     : null,
               ),
               const SizedBox(height: 24),
               Text(
-                'Manager login',
+                context.tr('Manager login'),
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 12),
@@ -96,7 +105,7 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
                 textCapitalization: TextCapitalization.words,
                 decoration: _dec('Manager name'),
                 validator: (v) => (v == null || v.trim().isEmpty)
-                    ? 'Enter the manager name'
+                    ? context.tr('Enter the manager name')
                     : null,
               ),
               const SizedBox(height: 12),
@@ -105,7 +114,7 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
                 keyboardType: TextInputType.emailAddress,
                 decoration: _dec('Manager email'),
                 validator: (v) => (v == null || !v.contains('@'))
-                    ? 'Enter a valid email'
+                    ? context.tr('Enter a valid email')
                     : null,
               ),
               const SizedBox(height: 12),
@@ -113,7 +122,7 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
                 controller: _password,
                 decoration: _dec('Password'),
                 validator: (v) => (v == null || v.length < 6)
-                    ? 'At least 6 characters'
+                    ? context.tr('At least 6 characters')
                     : null,
               ),
               if (_error != null) ...[
@@ -132,7 +141,7 @@ class _AddShopScreenState extends ConsumerState<AddShopScreen> {
                         width: 20,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Text('Create shop'),
+                    : Text(context.tr('Create shop')),
               ),
             ],
           ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n.dart';
 import '../theme.dart';
 
 /// A list's heading with a small live count beside it: "Menu  12 items".
@@ -26,10 +27,10 @@ class ListHeading extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.baseline,
         textBaseline: TextBaseline.alphabetic,
         children: [
-          Text(title, style: theme.textTheme.titleLarge),
+          Text(context.tr(title), style: theme.textTheme.titleLarge),
           const SizedBox(width: 10),
           Text(
-            '$count ${count == 1 ? one : many}',
+            context.plural(count, one, many),
             style: theme.textTheme.bodyMedium?.copyWith(
               color: context.h.pencil,
               fontFeatures: tabular,

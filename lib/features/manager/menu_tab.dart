@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/format.dart';
+import '../../core/l10n.dart';
 import '../../core/theme.dart';
 import '../../core/widgets/confirm_delete.dart';
 import '../../core/widgets/list_heading.dart';
@@ -25,7 +26,7 @@ Future<void> showItemDialog(
   return showDialog(
     context: context,
     builder: (ctx) => AlertDialog(
-      title: Text(existing == null ? 'Add item' : 'Edit item'),
+      title: Text(ctx.tr(existing == null ? 'Add item' : 'Edit item')),
       content: Form(
         key: formKey,
         child: Column(
@@ -36,9 +37,9 @@ Future<void> showItemDialog(
               autofocus: true,
               textCapitalization: TextCapitalization.words,
               textInputAction: TextInputAction.next,
-              decoration: const InputDecoration(labelText: 'Item name'),
+              decoration: InputDecoration(labelText: ctx.tr('Item name')),
               validator: (v) =>
-                  (v == null || v.trim().isEmpty) ? 'Enter a name' : null,
+                  (v == null || v.trim().isEmpty) ? ctx.tr('Enter a name') : null,
             ),
             const SizedBox(height: 12),
             TextFormField(
@@ -46,13 +47,15 @@ Future<void> showItemDialog(
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
               ),
-              decoration: const InputDecoration(
-                labelText: 'Price',
+              decoration: InputDecoration(
+                labelText: ctx.tr('Price'),
                 prefixText: 'Rs ',
               ),
               validator: (v) {
                 final n = num.tryParse((v ?? '').trim());
-                return (n == null || n < 0) ? 'Enter a valid price' : null;
+                return (n == null || n < 0)
+                    ? ctx.tr('Enter a valid price')
+                    : null;
               },
             ),
           ],
@@ -61,7 +64,7 @@ Future<void> showItemDialog(
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(ctx),
-          child: const Text('Cancel'),
+          child: Text(ctx.tr('Cancel')),
         ),
         FilledButton(
           style: FilledButton.styleFrom(minimumSize: const Size(0, 44)),
@@ -78,7 +81,7 @@ Future<void> showItemDialog(
                 );
             if (ctx.mounted) Navigator.pop(ctx);
           },
-          child: Text(existing == null ? 'Add item' : 'Save'),
+          child: Text(ctx.tr(existing == null ? 'Add item' : 'Save')),
         ),
       ],
     ),
@@ -98,14 +101,18 @@ class MenuTab extends ConsumerWidget {
     );
     return items.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('The menu could not be loaded. $e')),
+      error: (e, _) => Center(
+        child: Text(context.trf('The menu could not be loaded. {0}', [e])),
+      ),
       data: (list) {
         if (list.isEmpty) {
-          return const Center(
+          return Center(
             child: Padding(
-              padding: EdgeInsets.all(24),
+              padding: const EdgeInsets.all(24),
               child: Text(
-                'Your menu is empty.\nTap "Add item" to add what this shop sells.',
+                context.tr(
+                  'Your menu is empty.\nTap "Add item" to add what this shop sells.',
+                ),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -141,7 +148,7 @@ class MenuTab extends ConsumerWidget {
                 existing: it,
               ),
               trailing: IconButton(
-                tooltip: 'Delete ${it.name}',
+                tooltip: context.trf('Delete {0}', [it.name]),
                 icon: const Icon(Icons.delete_outline),
                 color: context.h.khataRed,
                 onPressed: () async {

@@ -89,7 +89,11 @@ const tabular = [FontFeature.tabularFigures()];
 const kTouch = 48.0;
 
 /// [localFontFamily] is only for screenshot tests, which can't download fonts.
-ThemeData buildTheme(Brightness brightness, {String? localFontFamily}) {
+ThemeData buildTheme(
+  Brightness brightness, {
+  String? localFontFamily,
+  bool urdu = false,
+}) {
   final h = brightness == Brightness.dark ? HTokens.dark : HTokens.light;
 
   final scheme = ColorScheme.fromSeed(
@@ -115,7 +119,9 @@ ThemeData buildTheme(Brightness brightness, {String? localFontFamily}) {
       : Typography.material2021().black;
   final base =
       (localFontFamily == null
-              ? GoogleFonts.atkinsonHyperlegibleNextTextTheme(typography)
+              ? (urdu
+                    ? GoogleFonts.notoNaskhArabicTextTheme(typography)
+                    : GoogleFonts.atkinsonHyperlegibleNextTextTheme(typography))
               : typography.apply(fontFamily: localFontFamily))
           .apply(bodyColor: h.graphite, displayColor: h.graphite);
   final text = base.copyWith(

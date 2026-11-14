@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/format.dart';
+import '../../core/l10n.dart';
 import '../../core/theme.dart';
 import '../../models/app_user.dart';
 import '../../models/item.dart';
@@ -54,7 +55,7 @@ class ShopsTab extends ConsumerWidget {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
-          child: Text('Shops could not be loaded. ${shopsAsync.error}'),
+          child: Text(context.trf('Shops could not be loaded. {0}', [shopsAsync.error])),
         ),
       );
     }
@@ -76,7 +77,10 @@ class ShopsTab extends ConsumerWidget {
         ),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-          child: Text('Shops', style: Theme.of(context).textTheme.titleMedium),
+          child: Text(
+            context.tr('Shops'),
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
         ),
         const Divider(),
         if (shopsAsync.isLoading && shops.isEmpty)
@@ -85,10 +89,12 @@ class ShopsTab extends ConsumerWidget {
             child: Center(child: CircularProgressIndicator()),
           )
         else if (shops.isEmpty)
-          const Padding(
-            padding: EdgeInsets.all(32),
+          Padding(
+            padding: const EdgeInsets.all(32),
             child: Text(
-              'No shops yet. Tap "Add shop" to create one and give its manager a login.',
+              context.tr(
+                'No shops yet. Tap "Add shop" to create one and give its manager a login.',
+              ),
               textAlign: TextAlign.center,
             ),
           )
@@ -126,8 +132,6 @@ class _OwnerCard extends StatelessWidget {
   final int shopCount;
   final int waiterCount;
   final int itemCount;
-
-  String _plural(int n, String one, String many) => '$n ${n == 1 ? one : many}';
 
   @override
   Widget build(BuildContext context) {
@@ -179,7 +183,9 @@ class _OwnerCard extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           Text(
-            cafeName.isEmpty ? 'Sales today' : '$cafeName sales today',
+            cafeName.isEmpty
+                ? context.tr('Sales today')
+                : context.trf('{0} sales today', [cafeName]),
             style: t.bodyLarge?.copyWith(color: context.h.pencil),
           ),
           const SizedBox(height: 2),
@@ -214,7 +220,7 @@ class _OwnerCard extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(bottom: 6),
                 child: Text(
-                  _plural(todayOrders, 'order', 'orders'),
+                  context.plural(todayOrders, 'order', 'orders'),
                   style: t.bodyLarge,
                 ),
               ),
@@ -223,14 +229,17 @@ class _OwnerCard extends StatelessWidget {
           const SizedBox(height: 18),
           Row(
             children: [
-              _Fact(value: shopCount, label: shopCount == 1 ? 'shop' : 'shops'),
+              _Fact(
+                value: shopCount,
+                label: context.tr(shopCount == 1 ? 'shop' : 'shops'),
+              ),
               _Fact(
                 value: waiterCount,
-                label: waiterCount == 1 ? 'waiter' : 'waiters',
+                label: context.tr(waiterCount == 1 ? 'waiter' : 'waiters'),
               ),
               _Fact(
                 value: itemCount,
-                label: itemCount == 1 ? 'menu item' : 'menu items',
+                label: context.tr(itemCount == 1 ? 'menu item' : 'menu items'),
               ),
             ],
           ),
@@ -290,7 +299,7 @@ class _ShopRow extends StatelessWidget {
       leading: const Icon(Icons.storefront),
       title: Text(shop.name, style: t.titleMedium),
       subtitle: Text(
-        'Today $amount',
+        context.trf('Today {0}', [amount]),
         style: t.bodyMedium?.copyWith(
           color: context.h.pencil,
           fontFeatures: tabular,
@@ -301,15 +310,17 @@ class _ShopRow extends StatelessWidget {
         _row(
           context,
           'Menu',
-          itemCount == 1 ? '1 item' : '$itemCount items',
-          itemCount == 0 ? 'None yet. The manager adds the menu.' : null,
+          context.plural(itemCount, 'item', 'items'),
+          itemCount == 0
+              ? context.tr('None yet. The manager adds the menu.')
+              : null,
         ),
         _row(
           context,
           'Waiters',
           '${waiters.length}',
           waiters.isEmpty
-              ? 'None yet. The manager adds waiters.'
+              ? context.tr('None yet. The manager adds waiters.')
               : waiters.map((w) => w.name).join(', '),
         ),
         _row(
@@ -318,7 +329,9 @@ class _ShopRow extends StatelessWidget {
           amount,
           today == null
               ? null
-              : '${today!.orders.length} ${today!.orders.length == 1 ? 'order' : 'orders'}, updates live',
+              : context.trf('{0}, updates live', [
+                  context.plural(today!.orders.length, 'order', 'orders'),
+                ]),
           highlight: true,
         ),
       ],
@@ -344,7 +357,7 @@ class _ShopRow extends StatelessWidget {
           SizedBox(
             width: 88,
             child: Text(
-              label,
+              context.tr(label),
               style: t.bodyMedium?.copyWith(color: context.h.pencil),
             ),
           ),

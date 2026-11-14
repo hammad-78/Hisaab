@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/format.dart';
+import '../../../core/l10n.dart';
 import '../../../core/theme.dart';
 import '../../../models/item.dart';
 
@@ -55,7 +56,7 @@ class OrderSlip extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(_margin + 14, 20, 16, 18),
                   child: Text(
-                    'Tap menu items to start an order.',
+                    context.tr('Tap menu items to start an order.'),
                     style: theme.textTheme.bodyLarge?.copyWith(color: h.pencil),
                   ),
                 ),
@@ -73,7 +74,7 @@ class OrderSlip extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          _header(theme),
+                          _header(context, theme),
                           ConstrainedBox(
                             constraints: BoxConstraints(
                               maxHeight:
@@ -84,11 +85,11 @@ class OrderSlip extends StatelessWidget {
                               padding: EdgeInsets.zero,
                               children: [
                                 for (final l in lines)
-                                  _line(theme, l, key: ValueKey(l.item.id)),
+                                  _line(context, theme, l, key: ValueKey(l.item.id)),
                               ],
                             ),
                           ),
-                          _total(theme, total),
+                          _total(context, theme, total),
                         ],
                       ),
                     ),
@@ -110,9 +111,11 @@ class OrderSlip extends StatelessWidget {
                             )
                           : const Icon(Icons.check),
                       label: Text(
-                        onPlace == null
-                            ? 'Choose a waiter to place this order'
-                            : 'Place order',
+                        context.tr(
+                          onPlace == null
+                              ? 'Choose a waiter to place this order'
+                              : 'Place order',
+                        ),
                       ),
                     ),
                   ),
@@ -137,7 +140,7 @@ class OrderSlip extends StatelessWidget {
     ],
   );
 
-  Widget _header(ThemeData theme) => Padding(
+  Widget _header(BuildContext context, ThemeData theme) => Padding(
     padding: const EdgeInsets.fromLTRB(0, 0, 8, 4),
     child: Row(
       children: [
@@ -145,7 +148,7 @@ class OrderSlip extends StatelessWidget {
           width: _margin,
           child: ExcludeSemantics(
             child: Text(
-              'Qty',
+              context.tr('Qty'),
               textAlign: TextAlign.center,
               style: theme.textTheme.labelMedium?.copyWith(
                 color: theme.h.pencil,
@@ -158,7 +161,9 @@ class OrderSlip extends StatelessWidget {
           child: Semantics(
             header: true,
             child: Text(
-              waiterName == null ? 'New order' : 'Order for $waiterName',
+              waiterName == null
+                  ? context.tr('New order')
+                  : context.trf('Order for {0}', [waiterName]),
               style: theme.textTheme.titleMedium,
               overflow: TextOverflow.ellipsis,
             ),
@@ -166,14 +171,19 @@ class OrderSlip extends StatelessWidget {
         ),
         TextButton(
           onPressed: busy ? null : onClear,
-          child: const Text('Clear'),
+          child: Text(context.tr('Clear')),
         ),
       ],
     ),
   );
 
   /// One row. Min height (not fixed) so large system text never clips.
-  Widget _line(ThemeData theme, SlipLine l, {Key? key}) {
+  Widget _line(
+    BuildContext context,
+    ThemeData theme,
+    SlipLine l, {
+    Key? key,
+  }) {
     final h = theme.h;
     return Container(
       key: key,
@@ -220,13 +230,13 @@ class OrderSlip extends StatelessWidget {
           _step(
             h,
             Icons.remove,
-            'One less ${l.item.name}',
+            context.trf('One less {0}', [l.item.name]),
             () => onChange(l.item.id, -1),
           ),
           _step(
             h,
             Icons.add,
-            'One more ${l.item.name}',
+            context.trf('One more {0}', [l.item.name]),
             () => onChange(l.item.id, 1),
           ),
           const SizedBox(width: 4),
@@ -244,14 +254,14 @@ class OrderSlip extends StatelessWidget {
         color: h.pencil,
       );
 
-  Widget _total(ThemeData theme, num total) {
+  Widget _total(BuildContext context, ThemeData theme, num total) {
     final h = theme.h;
     return Padding(
       padding: const EdgeInsets.fromLTRB(_margin + 14, 10, 16, 10),
       child: MergeSemantics(
         child: Row(
           children: [
-            Text('Total', style: theme.textTheme.titleMedium),
+            Text(context.tr('Total'), style: theme.textTheme.titleMedium),
             const SizedBox(width: 12),
             // Ruled off like a ledger total: double line underneath.
             // Right-aligned, and shrinks rather than overflowing at large text.

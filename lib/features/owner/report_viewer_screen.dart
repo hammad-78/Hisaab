@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:printing/printing.dart';
 
 import '../../core/format.dart';
+import '../../core/l10n.dart';
 import '../../core/theme.dart';
 import '../../models/report.dart';
 import '../../services/report_export.dart';
@@ -46,14 +47,20 @@ class _ReportViewerScreenState extends State<ReportViewerScreen> {
         widget.format,
         await _file,
       );
+      if (!mounted) return;
       if (saved != null && saved.isNotEmpty) {
         messenger.showSnackBar(
-          SnackBar(content: Text('Downloaded $_fileName')),
+          SnackBar(
+            content: Text(context.trf('Downloaded {0}', [_fileName])),
+          ),
         );
       }
     } catch (e) {
+      if (!mounted) return;
       messenger.showSnackBar(
-        SnackBar(content: Text('Download failed. Try again. ($e)')),
+        SnackBar(
+          content: Text(context.trf('Download failed. Try again. ({0})', [e])),
+        ),
       );
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -66,7 +73,11 @@ class _ReportViewerScreenState extends State<ReportViewerScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not share the file. ($e)')),
+          SnackBar(
+            content: Text(
+              context.trf('Could not share the file. ({0})', [e]),
+            ),
+          ),
         );
       }
     }
@@ -82,7 +93,7 @@ class _ReportViewerScreenState extends State<ReportViewerScreen> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Sales report (${f.label})'),
+            Text(context.trf('Sales report ({0})', [f.label])),
             Text(
               '${ReportExport.period(widget.report)}, ${widget.report.shopLabel}',
               style: theme.textTheme.bodySmall?.copyWith(
@@ -93,7 +104,7 @@ class _ReportViewerScreenState extends State<ReportViewerScreen> {
         ),
         actions: [
           IconButton(
-            tooltip: 'Share',
+            tooltip: context.tr('Share'),
             icon: const Icon(Icons.share_outlined),
             onPressed: _share,
           ),
@@ -105,7 +116,11 @@ class _ReportViewerScreenState extends State<ReportViewerScreen> {
               builder: (_, snap) {
                 if (snap.hasError) {
                   return Center(
-                    child: Text('The PDF could not be built. ${snap.error}'),
+                    child: Text(
+                      context.trf('The PDF could not be built. {0}', [
+                        snap.error,
+                      ]),
+                    ),
                   );
                 }
                 if (!snap.hasData) {
@@ -144,7 +159,7 @@ class _ReportViewerScreenState extends State<ReportViewerScreen> {
                     ),
                   )
                 : const Icon(Icons.download),
-            label: Text('Download ${f.label}'),
+            label: Text(context.trf('Download {0}', [f.label])),
           ),
         ),
       ),
@@ -226,7 +241,7 @@ class _Sheet extends StatelessWidget {
     final h = context.h;
 
     if (hasHeader && rows.length == 1) {
-      return const Center(child: Text('No rows in this sheet.'));
+      return Center(child: Text(context.tr('No rows in this sheet.')));
     }
 
     return SingleChildScrollView(
